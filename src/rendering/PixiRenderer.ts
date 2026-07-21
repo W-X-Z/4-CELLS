@@ -35,10 +35,14 @@ export class PixiRenderer {
 
     await this.app.init({
       canvas,
-      preference: 'webgl', // WebGPU 프로빙으로 인한 지연/실패 회피(폭넓은 호환)
+      // 자동 감지의 Canvas fallback이 일부 모바일/소프트웨어 렌더링 환경에서
+      // resolve되지 않는 경우가 있어 WebGL만 사용한다. WebGL 1을 우선하면
+      // WebGL 2 컨텍스트 생성이 불안정한 모바일에서도 호환 범위가 넓다.
+      preference: ['webgl'],
+      preferWebGLVersion: 1,
       resizeTo: canvas.parentElement ?? window,
       background: 0x0a0f1a,
-      antialias: true,
+      antialias: !quality.isMobile,
       resolution: Math.min(window.devicePixelRatio || 1, quality.resolutionCap),
       autoDensity: true,
     });
