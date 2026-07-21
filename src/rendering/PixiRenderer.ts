@@ -1,4 +1,14 @@
-import { Application, Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
+import {
+  CanvasRenderer,
+  Container,
+  Graphics,
+  Sprite,
+  Text,
+  Texture,
+  Ticker,
+  UPDATE_PRIORITY,
+  WebGLRenderer,
+} from 'pixi.js';
 import type { World } from '../simulation/World';
 import { speciesDefs } from '../data/species';
 import type { QualityProfile } from '../core/device';
@@ -11,7 +21,15 @@ const TEX_RADIUS = 16; // 텍스처 기준 반경(스프라이트에서 축소)
  * 세포는 종별 모양(색약 대응) + tint 색상. 스프라이트 풀링으로 GC 최소화.
  */
 export class PixiRenderer {
-  app = new Application();
+  readonly app = { ticker: new Ticker() };
+  private renderer!: WebGLRenderer | CanvasRenderer;
+  private stage = new Container();
+  private resizeTarget!: HTMLElement;
+  private readonly resizeHandler = (): void => {
+    const width = this.resizeTarget.clientWidth || window.innerWidth;
+    const height = this.resizeTarget.clientHeight || window.innerHeight;
+    this.renderer.resize(width, height);
+  };
   private world!: World;
   private quality!: QualityProfile;
 
@@ -32,35 +50,66 @@ export class PixiRenderer {
   async init(canvas: HTMLCanvasElement, world: World, quality: QualityProfile): Promise<void> {
     this.world = world;
     this.quality = quality;
+    this.resizeTarget = canvas.parentElement ?? document.body;
+    this.renderer = await this.createRenderer(canvas, quality);
 
-    await this.app.init({
-      canvas,
-      // 자동 감지의 Canvas fallback이 일부 모바일/소프트웨어 렌더링 환경에서
-      // resolve되지 않는 경우가 있어 WebGL만 사용한다. WebGL 1을 우선하면
-      // WebGL 2 컨텍스트 생성이 불안정한 모바일에서도 호환 범위가 넓다.
-      preference: ['webgl'],
-      preferWebGLVersion: 1,
-      resizeTo: canvas.parentElement ?? window,
-      background: 0x0a0f1a,
-      antialias: !quality.isMobile,
-      resolution: Math.min(window.devicePixelRatio || 1, quality.resolutionCap),
-      autoDensity: true,
-    });
+    this.resizeHandler();
+    window.addEventListener('resize', this.resizeHandler);
 
-    this.app.stage.addChild(this.root);
+    this.stage.addChild(this.root);
     this.root.addChild(this.cellLayer);
     this.root.addChild(this.fxLayer);
     this.fxCap = quality.isMobile ? 16 : 40;
     this.buildTextures();
     this.fit();
+
+    // 게임 갱신(NORMAL) 뒤에 실제 화면을 그린다.
+    this.app.ticker.add(() => this.renderer.render({ container: this.stage }), undefined, UPDATE_PRIORITY.LOW);
+    this.app.ticker.start();
     // 참고: fit()은 render()에서 매 프레임 호출 — Pixi의 지연 리사이즈와 월드 크기 변경을 모두 즉시 반영
+  }
+
+  private async createRenderer(
+    canvas: HTMLCanvasElement,
+    quality: QualityProfile,
+  ): Promise<WebGLRenderer | CanvasRenderer> {
+    const resolution = Math.min(window.devicePixelRatio || 1, quality.resolutionCap);
+
+    // PixiJS autoDetectRenderer는 WebGL 컨텍스트와 함께 stencil 지원까지 선검사한다.
+    // 일부 모바일은 WebGL이 가능해도 stencil이 없어 자동 감지에서 탈락하므로 직접 초기화한다.
+    try {
+      const webgl = new WebGLRenderer();
+      await webgl.init({
+        canvas,
+        preferWebGLVersion: 1,
+        background: 0x0a0f1a,
+        antialias: !quality.isMobile,
+        resolution,
+        autoDensity: true,
+      });
+      return webgl;
+    } catch (webglError) {
+      console.warn('WebGL renderer unavailable; falling back to Canvas renderer.', webglError);
+
+      // 이미 그래픽 컨텍스트 생성을 시도한 canvas는 다른 컨텍스트를 반환하지 않을 수 있어 교체한다.
+      const fallbackCanvas = canvas.cloneNode(false) as HTMLCanvasElement;
+      canvas.replaceWith(fallbackCanvas);
+      const canvasRenderer = new CanvasRenderer();
+      await canvasRenderer.init({
+        canvas: fallbackCanvas,
+        background: 0x0a0f1a,
+        resolution,
+        autoDensity: true,
+      });
+      return canvasRenderer;
+    }
   }
 
   private buildTextures(): void {
     for (const def of speciesDefs) {
       const g = new Graphics();
       drawShape(g, def.shape, TEX_RADIUS);
-      this.textures[def.id] = this.app.renderer.generateTexture({ target: g, resolution: 2 });
+      this.textures[def.id] = this.renderer.generateTexture({ target: g, resolution: 2 });
       g.destroy();
     }
   }
@@ -68,9 +117,9 @@ export class PixiRenderer {
   /** 월드 좌표계를 캔버스에 레터박스로 맞춤 */
   private fit(): void {
     const { width, height } = this.world.cfg;
-    // app.screen은 항상 논리(화면) px. renderer.width도 v8에선 논리 px라 resolution으로 나누면 안 됨.
-    const sw = this.app.screen.width;
-    const sh = this.app.screen.height;
+    // screen은 항상 논리(화면) px. renderer.width도 v8에선 논리 px라 resolution으로 나누면 안 됨.
+    const sw = this.renderer.screen.width;
+    const sh = this.renderer.screen.height;
     const scale = Math.min(sw / width, sh / height);
     this.worldScale = scale || 1;
     this.root.scale.set(scale);
@@ -196,7 +245,10 @@ export class PixiRenderer {
   }
 
   destroy(): void {
-    this.app.destroy(true, { children: true, texture: true });
+    window.removeEventListener('resize', this.resizeHandler);
+    this.app.ticker.destroy();
+    this.stage.destroy({ children: true, texture: true });
+    this.renderer.destroy(true);
   }
 }
 
