@@ -27,7 +27,24 @@ const config = { ...environmentConfig, maxCells: quality.maxCells, ...worldSize 
 
 const game = new Game({ seed, config });
 const renderer = new PixiRenderer();
-await renderer.init(canvas, game.world, quality);
+
+// 렌더러 초기화가 멈추더라도 빈 화면만 남지 않도록 상태를 표시하고 타임아웃 처리한다.
+const startupStatus = document.createElement('div');
+startupStatus.className = 'startup-status';
+startupStatus.textContent = '세포 생태계를 불러오는 중…';
+uiRoot.appendChild(startupStatus);
+
+try {
+  await withTimeout(renderer.init(canvas, game.world, quality), 12_000);
+  startupStatus.remove();
+} catch (error) {
+  console.error('Renderer initialization failed:', error);
+  startupStatus.classList.add('startup-error');
+  startupStatus.innerHTML = `
+    <strong>그래픽 초기화에 실패했습니다.</strong>
+    <span>Chrome의 하드웨어 가속 또는 WebGL 사용 가능 여부를 확인한 뒤 새로고침해 주세요.</span>`;
+  throw error;
+}
 
 const feedback = new FeedbackLayer(uiRoot);
 
@@ -132,4 +149,20 @@ hud.update(game.snapshot());
 if (import.meta.env.DEV) {
   (window as unknown as { __game: Game; __renderer: PixiRenderer }).__game = game;
   (window as unknown as { __game: Game; __renderer: PixiRenderer }).__renderer = renderer;
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = window.setTimeout(() => reject(new Error(`Renderer initialization timed out after ${ms}ms`)), ms);
+    promise.then(
+      (value) => {
+        window.clearTimeout(timer);
+        resolve(value);
+      },
+      (error: unknown) => {
+        window.clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
 }

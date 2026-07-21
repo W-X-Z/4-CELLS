@@ -27,6 +27,17 @@ html, body {
 #ui-root { position: absolute; inset: 0; pointer-events: none; }
 #ui-root button { pointer-events: auto; }
 
+.startup-status {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  padding: 24px; text-align: center;
+  color: var(--muted); background: var(--bg);
+  font-size: 14px; line-height: 1.5;
+}
+.startup-status strong { color: var(--text); font-size: 17px; }
+.startup-status span { max-width: 360px; }
+.startup-status.startup-error { color: #fda4af; }
+
 .btn {
   background: var(--panel); color: var(--text);
   border: 1px solid var(--line); border-radius: 8px;
