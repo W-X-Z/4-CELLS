@@ -1,0 +1,25 @@
+{
+  "name": "four-cells",
+  "version": "0.1.0",
+  "description": "세포 생태계 시뮬레이션 게임 (MVP)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "sim": "tsx scripts/headless-sim.ts"
+  },
+  "dependencies": {
+    "pixi.js": "^8.6.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.10",
+    "vitest": "^2.1.4"
+  }
+}

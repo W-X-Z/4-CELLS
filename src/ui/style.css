@@ -1,0 +1,139 @@
+:root {
+  --bg: #0a0f1a;
+  --panel: rgba(16, 24, 40, 0.82);
+  --panel-solid: #0f1729;
+  --line: rgba(120, 150, 200, 0.18);
+  --text: #e6edf7;
+  --muted: #8ea3c0;
+  --accent: #38bdf8;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: none;
+}
+
+#app { position: fixed; inset: 0; }
+#stage { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#ui-root { position: absolute; inset: 0; pointer-events: none; }
+#ui-root button { pointer-events: auto; }
+
+/* ── HUD ── */
+.hud-top {
+  position: absolute; top: 0; left: 0; right: 0;
+  display: flex; align-items: center; gap: 16px;
+  padding: 8px 14px;
+  background: linear-gradient(180deg, rgba(10,15,26,0.92), rgba(10,15,26,0));
+}
+.brand { font-weight: 800; letter-spacing: 0.5px; font-size: 18px; color: var(--accent); }
+.stats { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.stat b { color: var(--text); font-size: 15px; }
+.controls { margin-left: auto; display: flex; gap: 6px; }
+
+.btn {
+  background: var(--panel); color: var(--text);
+  border: 1px solid var(--line); border-radius: 8px;
+  padding: 7px 12px; font-size: 14px; font-weight: 600; cursor: pointer;
+  min-width: 42px; min-height: 38px;
+}
+.btn:hover { border-color: var(--accent); }
+.btn.active { background: var(--accent); color: #04121f; border-color: var(--accent); }
+
+.hud-side {
+  position: absolute; top: 54px; left: 12px; width: 268px; max-width: 44vw;
+  background: var(--panel); backdrop-filter: blur(6px);
+  border: 1px solid var(--line); border-radius: 12px;
+  padding: 10px 12px; max-height: calc(100% - 70px); overflow-y: auto;
+}
+.panel-title { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin: 10px 0 6px; }
+.panel-title:first-child { margin-top: 0; }
+
+.sp-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; }
+.dot { width: 11px; height: 11px; border-radius: 50%; flex: none; }
+.sp-name { font-size: 13px; flex: 1; }
+.sp-count { font-size: 14px; min-width: 34px; text-align: right; }
+.spark { opacity: 0.9; }
+
+.res-row { padding: 5px 0; }
+.res-head { display: flex; align-items: center; gap: 6px; font-size: 12px; margin-bottom: 3px; }
+.res-name { flex: 1; color: var(--muted); }
+.res-val { font-variant-numeric: tabular-nums; }
+.res-delta { font-size: 10px; }
+.res-delta.up { color: #4ade80; }
+.res-delta.down { color: #f87171; }
+.res-delta.flat { color: var(--muted); }
+.bar { height: 7px; border-radius: 4px; background: rgba(255,255,255,0.08); overflow: hidden; }
+.bar-fill { height: 100%; width: 0%; transition: width 0.2s ease; border-radius: 4px; }
+.spark-res { display: block; margin-top: 3px; width: 100%; }
+
+/* ── 선택지 오버레이 ── */
+.choice-overlay {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 20px;
+  background: rgba(6, 10, 20, 0.72); backdrop-filter: blur(3px);
+}
+.choice-overlay.hidden { display: none; }
+.choice-title { font-size: 20px; font-weight: 700; }
+.choice-grid { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; padding: 0 16px; max-width: 960px; }
+.choice-card {
+  width: 260px; min-height: 150px; text-align: left;
+  background: var(--panel-solid); border: 1px solid var(--line); border-radius: 14px;
+  padding: 16px; cursor: pointer; color: var(--text); transition: transform 0.12s, border-color 0.12s;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.choice-card:hover { transform: translateY(-4px); border-color: var(--accent); }
+.choice-cat { font-size: 11px; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; }
+.choice-name { font-size: 17px; font-weight: 700; }
+.choice-desc { font-size: 13px; color: var(--muted); line-height: 1.5; }
+.cat-environment { border-top: 3px solid #38bdf8; }
+.cat-ability { border-top: 3px solid #a78bfa; }
+.cat-behavior { border-top: 3px solid #fb923c; }
+.cat-metabolism { border-top: 3px solid #4ade80; }
+.cat-spawn { border-top: 3px solid #f43f5e; }
+
+/* ── 게임오버 ── */
+.gameover-overlay {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: rgba(6, 10, 20, 0.85); backdrop-filter: blur(4px);
+}
+.gameover-overlay.hidden { display: none; }
+.gameover-card {
+  background: var(--panel-solid); border: 1px solid var(--line); border-radius: 16px;
+  padding: 30px 40px; text-align: center; max-width: 420px;
+}
+.gameover-title { font-size: 26px; font-weight: 800; color: #f87171; }
+.gameover-sub { color: var(--muted); margin: 8px 0 20px; }
+.gameover-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; margin-bottom: 22px; }
+.gameover-stats div { display: flex; flex-direction: column; align-items: flex-start; }
+.gameover-stats span { font-size: 12px; color: var(--muted); }
+.gameover-stats b { font-size: 20px; }
+.btn-restart { width: 100%; background: var(--accent); color: #04121f; border: none; font-size: 16px; padding: 12px; }
+
+/* ── 피드백 토스트 ── */
+.feedback-layer { position: absolute; right: 14px; bottom: 14px; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+.toast {
+  background: var(--panel-solid); border: 1px solid var(--line); border-left: 3px solid var(--accent);
+  border-radius: 10px; padding: 8px 12px; min-width: 180px; max-width: 260px;
+  animation: toast-in 0.24s ease; opacity: 1; transition: opacity 0.5s, transform 0.5s;
+}
+.toast-out { opacity: 0; transform: translateY(10px); }
+.toast-h { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
+.toast-l { font-size: 12px; color: var(--muted); }
+@keyframes toast-in { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: none; } }
+
+/* ── 모바일/세로 ── */
+@media (max-width: 720px) {
+  .hud-side { width: 210px; font-size: 12px; top: 50px; }
+  .brand { font-size: 15px; }
+  .stats { font-size: 11px; gap: 8px; }
+  .choice-card { width: 88vw; min-height: auto; }
+  .choice-grid { gap: 10px; }
+}
