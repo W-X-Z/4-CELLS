@@ -152,6 +152,20 @@ export class World {
     if (this.cells.length === 0) this.gameOver = true;
   }
 
+  /**
+   * 월드 경계 변경 (뷰포트 회전/리사이즈 대응).
+   * 기존 세포는 새 경계 안으로 클램프. 이후 스폰/이동은 자동으로 새 경계를 따른다.
+   */
+  resize(width: number, height: number): void {
+    if (width === this.cfg.width && height === this.cfg.height) return;
+    this.cfg.width = width;
+    this.cfg.height = height;
+    for (const c of this.cells) {
+      c.x = clamp(c.x, 0, width);
+      c.y = clamp(c.y, 0, height);
+    }
+  }
+
   pushEvent(e: SimEvent): void {
     if (this.events.length < 256) this.events.push(e);
   }
@@ -211,6 +225,7 @@ function deepCloneSpecies(): Record<SpeciesId, SpeciesDef> {
       ...s,
       intake: { ...s.intake },
       output: { ...s.output },
+      scavenge: { ...s.scavenge },
       preyOn: [...s.preyOn],
     };
   }

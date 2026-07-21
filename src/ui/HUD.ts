@@ -1,65 +1,73 @@
 import type { WorldSnapshot, SpeciesId, ResourceKey } from '../simulation/types';
 import { RESOURCE_KEYS, RESOURCE_LABELS } from '../simulation/types';
 import { speciesDefs } from '../data/species';
-import { environmentConfig } from '../data/environments';
-import type { TrendSample } from '../simulation/World';
 import type { Speed } from '../game/Game';
 
-const RES_COLORS: Record<ResourceKey, string> = {
-  light: '#fde047',
-  oxygen: '#38bdf8',
-  co2: '#a78bfa',
-  organic: '#a3e635',
-  heat: '#fb923c',
-  toxicity: '#f43f5e',
+/** 자원별 위험 판정 — 카드 강조용 (밸런스 수치는 choices.ts의 부스트 조건과 맞춤) */
+const DANGER: Partial<Record<ResourceKey, (v: number) => boolean>> = {
+  oxygen: (v) => v < 250,
+  co2: (v) => v < 200,
+  organic: (v) => v < 150,
+  heat: (v) => v > 700,
+  toxicity: (v) => v > 400,
+};
+
+/** 종별 모양 글리프 (색약 대응: 색 + 모양) */
+const SHAPE_GLYPH: Record<string, string> = {
+  circle: '●',
+  diamond: '◆',
+  triangle: '▲',
+  ring: '○',
 };
 
 function hex(n: number): string {
   return '#' + n.toString(16).padStart(6, '0');
 }
 
-/** 상단/사이드 대시보드. 종별 개체수·환경 자원 상태 + 추세 스파크라인. */
+function formatTime(sec: number): string {
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+/**
+ * 모바일 우선 HUD.
+ * 상단: 플레이 시간 + 배속/일시정지. 그 아래: 환경 자원 숫자 카드.
+ * 하단: 종별 개체수 바 — 탭하면 해당 종의 도움말 모달이 열린다.
+ */
 export class HUD {
   private prev: WorldSnapshot | null = null;
-  private resBars: Record<string, { fill: HTMLElement; val: HTMLElement; delta: HTMLElement; spark: HTMLCanvasElement }> = {};
-  private speciesEls: Record<string, { count: HTMLElement; spark: HTMLCanvasElement }> = {};
-  private stat: Record<string, HTMLElement> = {};
+  private timeEl!: HTMLElement;
+  private resEls: Record<string, { card: HTMLElement; val: HTMLElement; delta: HTMLElement }> = {};
+  private speciesEls: Record<string, { chip: HTMLElement; count: HTMLElement }> = {};
   private speedBtns: HTMLButtonElement[] = [];
   private pauseBtn!: HTMLButtonElement;
 
   constructor(
     private root: HTMLElement,
-    private handlers: { onSpeed: (s: Speed) => void; onPause: () => void },
+    private handlers: {
+      onSpeed: (s: Speed) => void;
+      onPause: () => void;
+      onSpeciesClick: (id: SpeciesId) => void;
+    },
   ) {
     this.build();
   }
 
   private build(): void {
-    const wrap = document.createElement('div');
-    wrap.className = 'hud';
-
-    // ── 상단 바 ──
+    // ── 상단 바: 시간 + 배속 ──
     const top = document.createElement('div');
     top.className = 'hud-top';
     top.innerHTML = `
-      <div class="brand">4&nbsp;Cells</div>
-      <div class="stats">
-        <span class="stat"><b id="s-time">0</b>초</span>
-        <span class="stat">점수 <b id="s-score">0</b></span>
-        <span class="stat">다양성 <b id="s-bio">0</b></span>
-        <span class="stat">개체수 <b id="s-cells">0</b></span>
-      </div>
+      <div class="hud-time">⏱ <b id="s-time">0:00</b></div>
       <div class="controls">
         <button class="btn" data-speed="1">1×</button>
         <button class="btn" data-speed="2">2×</button>
         <button class="btn" data-speed="4">4×</button>
         <button class="btn btn-pause" id="btn-pause">⏸</button>
       </div>`;
-    wrap.appendChild(top);
-    this.stat.time = top.querySelector('#s-time')!;
-    this.stat.score = top.querySelector('#s-score')!;
-    this.stat.bio = top.querySelector('#s-bio')!;
-    this.stat.cells = top.querySelector('#s-cells')!;
+    this.root.appendChild(top);
+    this.timeEl = top.querySelector('#s-time')!;
     this.pauseBtn = top.querySelector('#btn-pause')!;
     this.pauseBtn.onclick = () => this.handlers.onPause();
     top.querySelectorAll<HTMLButtonElement>('[data-speed]').forEach((b) => {
@@ -71,57 +79,40 @@ export class HUD {
       };
     });
 
-    // ── 사이드 패널 ──
-    const side = document.createElement('div');
-    side.className = 'hud-side';
-
-    const spTitle = document.createElement('div');
-    spTitle.className = 'panel-title';
-    spTitle.textContent = '세포 개체수';
-    side.appendChild(spTitle);
-
-    for (const def of speciesDefs) {
-      const row = document.createElement('div');
-      row.className = 'sp-row';
-      row.innerHTML = `
-        <span class="dot" style="background:${hex(def.color)}"></span>
-        <span class="sp-name">${def.name}</span>
-        <canvas class="spark" width="90" height="22"></canvas>
-        <b class="sp-count">0</b>`;
-      side.appendChild(row);
-      this.speciesEls[def.id] = {
-        count: row.querySelector('.sp-count')!,
-        spark: row.querySelector('canvas')!,
-      };
-    }
-
-    const resTitle = document.createElement('div');
-    resTitle.className = 'panel-title';
-    resTitle.textContent = '환경 자원';
-    side.appendChild(resTitle);
-
+    // ── 환경 자원 카드 (숫자만) ──
+    const cards = document.createElement('div');
+    cards.className = 'res-cards';
     for (const key of RESOURCE_KEYS) {
-      const row = document.createElement('div');
-      row.className = 'res-row';
-      row.innerHTML = `
-        <div class="res-head">
-          <span class="res-name">${RESOURCE_LABELS[key]}</span>
-          <span class="res-delta"></span>
-          <span class="res-val">0</span>
-        </div>
-        <div class="bar"><div class="bar-fill" style="background:${RES_COLORS[key]}"></div></div>
-        <canvas class="spark spark-res" width="200" height="20"></canvas>`;
-      side.appendChild(row);
-      this.resBars[key] = {
-        fill: row.querySelector('.bar-fill')!,
-        val: row.querySelector('.res-val')!,
-        delta: row.querySelector('.res-delta')!,
-        spark: row.querySelector('canvas')!,
+      const card = document.createElement('div');
+      card.className = 'res-card';
+      card.innerHTML = `
+        <span class="res-card-name">${RESOURCE_LABELS[key]}</span>
+        <span class="res-card-body"><b class="res-card-val">0</b><span class="res-card-delta"></span></span>`;
+      cards.appendChild(card);
+      this.resEls[key] = {
+        card,
+        val: card.querySelector('.res-card-val')!,
+        delta: card.querySelector('.res-card-delta')!,
       };
     }
+    this.root.appendChild(cards);
 
-    wrap.appendChild(side);
-    this.root.appendChild(wrap);
+    // ── 하단 세포 바 (탭 → 도움말) ──
+    const bar = document.createElement('div');
+    bar.className = 'sp-bar';
+    for (const def of speciesDefs) {
+      const chip = document.createElement('button');
+      chip.className = 'sp-chip';
+      chip.innerHTML = `
+        <span class="sp-glyph" style="color:${hex(def.color)}">${SHAPE_GLYPH[def.shape]}</span>
+        <span class="sp-chip-name">${def.name.replace(' 세포', '')}</span>
+        <b class="sp-chip-count">0</b>`;
+      chip.onclick = () => this.handlers.onSpeciesClick(def.id);
+      bar.appendChild(chip);
+      this.speciesEls[def.id] = { chip, count: chip.querySelector('.sp-chip-count')! };
+    }
+    this.root.appendChild(bar);
+
     this.setActiveSpeed(1);
   }
 
@@ -133,51 +124,26 @@ export class HUD {
     this.pauseBtn.textContent = paused ? '▶' : '⏸';
   }
 
-  update(snap: WorldSnapshot, trend: TrendSample[]): void {
-    this.stat.time.textContent = snap.time.toFixed(0);
-    this.stat.score.textContent = String(snap.score);
-    this.stat.bio.textContent = snap.biodiversity.toFixed(2);
-    this.stat.cells.textContent = String(snap.totalCells);
+  update(snap: WorldSnapshot): void {
+    this.timeEl.textContent = formatTime(snap.time);
+
+    for (const key of RESOURCE_KEYS) {
+      const el = this.resEls[key];
+      const v = snap.resources[key];
+      el.val.textContent = v.toFixed(0);
+      el.card.classList.toggle('danger', DANGER[key]?.(v) ?? false);
+      if (this.prev) {
+        const d = v - this.prev.resources[key];
+        el.delta.textContent = Math.abs(d) < 0.5 ? '' : d > 0 ? '▲' : '▼';
+        el.delta.className = 'res-card-delta ' + (d > 0 ? 'up' : 'down');
+      }
+    }
 
     for (const def of speciesDefs) {
       const el = this.speciesEls[def.id];
       el.count.textContent = String(snap.counts[def.id]);
-      drawSparkline(el.spark, trend.map((t) => t.counts[def.id as SpeciesId]), hex(def.color));
-    }
-
-    for (const key of RESOURCE_KEYS) {
-      const b = this.resBars[key];
-      const v = snap.resources[key];
-      const cap = environmentConfig.displayCaps[key];
-      b.fill.style.width = `${Math.min(100, (v / cap) * 100)}%`;
-      b.val.textContent = v.toFixed(0);
-      if (this.prev) {
-        const d = v - this.prev.resources[key];
-        b.delta.textContent = Math.abs(d) < 0.5 ? '·' : d > 0 ? '▲' : '▼';
-        b.delta.className = 'res-delta ' + (Math.abs(d) < 0.5 ? 'flat' : d > 0 ? 'up' : 'down');
-      }
-      drawSparkline(b.spark, trend.map((t) => t.resources[key]), RES_COLORS[key], cap);
+      el.chip.classList.toggle('empty', snap.counts[def.id] === 0);
     }
     this.prev = snap;
   }
-}
-
-function drawSparkline(canvas: HTMLCanvasElement, values: number[], color: string, max?: number): void {
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-  const w = canvas.width;
-  const h = canvas.height;
-  ctx.clearRect(0, 0, w, h);
-  if (values.length < 2) return;
-  const hi = max ?? Math.max(1, ...values);
-  ctx.beginPath();
-  for (let i = 0; i < values.length; i++) {
-    const x = (i / (values.length - 1)) * w;
-    const y = h - (Math.min(values[i], hi) / hi) * (h - 2) - 1;
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  }
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
 }

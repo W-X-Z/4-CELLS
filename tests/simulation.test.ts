@@ -53,9 +53,9 @@ describe('선택지 Effect', () => {
   it('spawn 선택지는 해당 종 개체수를 늘린다', () => {
     const game = new Game({ seed: 5, autoChoice: () => null });
     const before = game.world.counts().decomposer;
-    game.choices.apply('sp_decomposer_seed'); // 분해 세포 40 투입
+    game.choices.apply('sp_decomposer_seed'); // 분해 세포 24 투입
     const after = game.world.counts().decomposer;
-    expect(after).toBe(before + 40);
+    expect(after).toBe(before + 24);
   });
 
   it('상황 가중치: 산소 위기에서 산소 관련 선택지가 후보에 들어온다', () => {

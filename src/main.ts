@@ -4,7 +4,8 @@ import { HUD } from './ui/HUD';
 import { ChoicePanel } from './ui/ChoicePanel';
 import { GameOverPanel } from './ui/GameOverPanel';
 import { FeedbackLayer } from './ui/FeedbackLayer';
-import { detectQuality } from './core/device';
+import { InfoModal } from './ui/InfoModal';
+import { computeWorldSize, detectQuality } from './core/device';
 import { environmentConfig } from './data/environments';
 import { choiceDefs } from './data/choices';
 
@@ -20,7 +21,9 @@ if (!params.has('seed')) {
 }
 
 const quality = detectQuality();
-const config = { ...environmentConfig, maxCells: quality.maxCells };
+// 월드 크기를 화면 비율에 맞춤 (면적은 유지 → 밀도/밸런스 보존, 레터박스 제거)
+const worldSize = computeWorldSize(window.innerWidth, window.innerHeight);
+const config = { ...environmentConfig, maxCells: quality.maxCells, ...worldSize };
 
 const game = new Game({ seed, config });
 const renderer = new PixiRenderer();
@@ -28,11 +31,31 @@ await renderer.init(canvas, game.world, quality);
 
 const feedback = new FeedbackLayer(uiRoot);
 
+// 모달을 닫으면 (열기 전에 돌아가고 있었다면) 재개
+let resumeOnModalClose = false;
+const infoModal = new InfoModal(uiRoot, () => {
+  if (resumeOnModalClose && game.phase === 'paused') {
+    game.togglePause();
+    hud.setPaused(false);
+  }
+  resumeOnModalClose = false;
+});
+
 const hud = new HUD(uiRoot, {
   onSpeed: (s: Speed) => game.setSpeed(s),
   onPause: () => {
     game.togglePause();
     hud.setPaused(game.phase === 'paused');
+  },
+  onSpeciesClick: (id) => {
+    if (game.phase === 'choosing' || game.phase === 'gameover') return;
+    // 세포 도움말: 시뮬레이션을 멈추고 모달 표시
+    resumeOnModalClose = game.phase === 'running';
+    if (game.phase === 'running') {
+      game.togglePause();
+      hud.setPaused(true);
+    }
+    infoModal.show(id, game.world, game.appliedChoices);
   },
 });
 
@@ -60,12 +83,19 @@ renderer.app.ticker.add((ticker) => {
   hudAccum += ticker.deltaMS;
   if (hudAccum >= 100) {
     hudAccum = 0;
-    hud.update(game.snapshot(), game.world.trend);
+    hud.update(game.snapshot());
   }
 });
 
 // ── 입력 ──
 window.addEventListener('keydown', (e) => {
+  if (infoModal.visible) {
+    if (e.key === 'Escape' || e.key === ' ') {
+      e.preventDefault();
+      infoModal.hide();
+    }
+    return;
+  }
   if (e.key === ' ') {
     e.preventDefault();
     game.togglePause();
@@ -77,6 +107,16 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
+// ── 리사이즈/회전: 월드 경계를 새 화면 비율로 갱신 ──
+let resizeTimer = 0;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = window.setTimeout(() => {
+    const { width, height } = computeWorldSize(window.innerWidth, window.innerHeight);
+    game.world.resize(width, height);
+  }, 150);
+});
+
 // ── 백그라운드 자동 일시정지 ──
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && game.phase === 'running') {
@@ -86,4 +126,10 @@ document.addEventListener('visibilitychange', () => {
 });
 
 // 초기 HUD 1회 갱신
-hud.update(game.snapshot(), game.world.trend);
+hud.update(game.snapshot());
+
+// 개발 콘솔 디버그 핸들 (밸런스 튜닝/검증용)
+if (import.meta.env.DEV) {
+  (window as unknown as { __game: Game; __renderer: PixiRenderer }).__game = game;
+  (window as unknown as { __game: Game; __renderer: PixiRenderer }).__renderer = renderer;
+}

@@ -10,7 +10,7 @@ export class Environment {
 
   constructor(private cfg: EnvironmentConfig) {
     this.resources = { ...(cfg.initialResources as Resources) };
-    this.regen = { light: cfg.lightRegen, oxygen: 0, co2: 0, organic: 0, heat: 0, toxicity: 0 };
+    this.regen = { oxygen: 0, co2: 0, organic: 0, heat: 0, toxicity: 0 };
   }
 
   update(dt: number): void {
@@ -19,8 +19,6 @@ export class Environment {
     for (const key of RESOURCE_KEYS) {
       if (this.regen[key] !== 0) r[key] += this.regen[key] * dt;
     }
-    // 빛 상한
-    if (r.light > this.cfg.lightCap) r.light = this.cfg.lightCap;
     // 열 소산(주변 온도로 수렴)
     r.heat = damp(r.heat, this.cfg.ambientHeat, this.cfg.heatDissipation, dt);
     // 독성 자연 감쇠

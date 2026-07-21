@@ -6,6 +6,21 @@ export interface QualityProfile {
   flashEffects: boolean; // 잔상/강조 효과
 }
 
+/** 기준 월드 면적. 화면 비율이 달라져도 면적을 유지해 밸런스(밀도)를 보존한다. */
+const WORLD_AREA = 1200 * 750;
+
+/**
+ * 뷰포트 비율에 맞는 월드 크기 계산.
+ * 세로 화면이면 세로로 긴 월드가 되어 레터박스 없이 화면을 가득 채운다.
+ */
+export function computeWorldSize(viewportW: number, viewportH: number): { width: number; height: number } {
+  const raw = viewportW > 0 && viewportH > 0 ? viewportW / viewportH : 16 / 9;
+  const aspect = Math.min(2.4, Math.max(0.45, raw)); // 극단적 비율 방지
+  const width = Math.round(Math.sqrt(WORLD_AREA * aspect));
+  const height = Math.round(WORLD_AREA / width);
+  return { width, height };
+}
+
 export function detectQuality(): QualityProfile {
   const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
   const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(ua);

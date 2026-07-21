@@ -1,7 +1,6 @@
 import { dist2 } from '../../core/math';
 import type { World } from '../World';
 
-const VISION = 140; // 포식자 시야 반경(px)
 const neighbors: number[] = [];
 
 /** 이동 시스템: 이동 방식에 따라 속도를 결정하고 위치를 적분한다. */
@@ -13,9 +12,10 @@ export function runMovement(world: World, dt: number): void {
 
     const hungry = c.energy < def.maxEnergy * 0.7;
     if (def.moveMode === 'seekPrey' && def.preyOn.length > 0 && hungry) {
-      // 가장 가까운 먹이를 향해 조향
-      world.spatial.query(c.x, c.y, VISION, neighbors);
-      let bestD = VISION * VISION;
+      // 가장 가까운 먹이를 향해 조향 (종별 시야)
+      const vision = def.vision;
+      world.spatial.query(c.x, c.y, vision, neighbors);
+      let bestD = vision * vision;
       let tx = 0;
       let ty = 0;
       let found = false;

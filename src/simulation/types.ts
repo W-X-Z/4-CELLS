@@ -1,6 +1,9 @@
-/** 환경 자원 6종 (전역 풀 방식) */
+/**
+ * 환경 자원 5종 (전역 풀 방식).
+ * 빛은 "항상 존재하는 배경 조건"으로 취급 — 제한 자원이 아니므로 추적하지 않는다.
+ * 광합성은 CO₂가 유일한 원료 제약이 된다.
+ */
 export const RESOURCE_KEYS = [
-  'light', // 빛
   'oxygen', // 산소
   'co2', // 이산화탄소
   'organic', // 유기물
@@ -13,7 +16,6 @@ export type ResourceKey = (typeof RESOURCE_KEYS)[number];
 export type Resources = Record<ResourceKey, number>;
 
 export const RESOURCE_LABELS: Record<ResourceKey, string> = {
-  light: '빛',
   oxygen: '산소',
   co2: '이산화탄소',
   organic: '유기물',
@@ -34,11 +36,15 @@ export interface SpeciesDef {
 
   moveSpeed: number; // px/s 기준 최고 속도
   moveMode: 'drift' | 'seekResource' | 'seekPrey'; // 이동 방식
+  vision: number; // 먹이 탐지 반경(px). 낮을수록 먹이에 피난처가 생긴다. drift 종은 미사용.
 
   // 대사: 초당 자원 소비/생산 (에너지 획득 포함)
-  intake: Partial<Resources>; // 풀에서 소비 (양수). 부족하면 비례 축소.
+  intake: Partial<Resources>; // 풀에서 소비 (양수). 부족하면 비례 축소. 필수 원료 — 하나라도 0이면 대사 정지.
   output: Partial<Resources>; // 풀로 생산 (양수)
   energyFromIntake: number; // intake 충족 비율에 곱해 얻는 초당 에너지
+  // 기회적 정화: 있으면 소비(정화)하고 보너스 에너지를 얻지만, 없어도 굶지 않는다(satisfaction 미관여).
+  scavenge: Partial<Resources>;
+  energyFromScavenge: number; // scavenge 충족 비율에 곱해 얻는 초당 에너지
   upkeep: number; // 초당 에너지 소모(기초 대사)
 
   // 포식: seekPrey 종이 접촉 시 잡아먹는 대상

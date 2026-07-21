@@ -6,6 +6,7 @@
   --text: #e6edf7;
   --muted: #8ea3c0;
   --accent: #38bdf8;
+  --danger: #f43f5e;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -26,18 +27,6 @@ html, body {
 #ui-root { position: absolute; inset: 0; pointer-events: none; }
 #ui-root button { pointer-events: auto; }
 
-/* ── HUD ── */
-.hud-top {
-  position: absolute; top: 0; left: 0; right: 0;
-  display: flex; align-items: center; gap: 16px;
-  padding: 8px 14px;
-  background: linear-gradient(180deg, rgba(10,15,26,0.92), rgba(10,15,26,0));
-}
-.brand { font-weight: 800; letter-spacing: 0.5px; font-size: 18px; color: var(--accent); }
-.stats { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
-.stat b { color: var(--text); font-size: 15px; }
-.controls { margin-left: auto; display: flex; gap: 6px; }
-
 .btn {
   background: var(--panel); color: var(--text);
   border: 1px solid var(--line); border-radius: 8px;
@@ -47,32 +36,97 @@ html, body {
 .btn:hover { border-color: var(--accent); }
 .btn.active { background: var(--accent); color: #04121f; border-color: var(--accent); }
 
-.hud-side {
-  position: absolute; top: 54px; left: 12px; width: 268px; max-width: 44vw;
-  background: var(--panel); backdrop-filter: blur(6px);
-  border: 1px solid var(--line); border-radius: 12px;
-  padding: 10px 12px; max-height: calc(100% - 70px); overflow-y: auto;
+/* ── 상단 바: 시간 + 배속 ── */
+.hud-top {
+  position: absolute; top: 0; left: 0; right: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 12px;
+  padding-top: calc(8px + env(safe-area-inset-top));
+  background: linear-gradient(180deg, rgba(10,15,26,0.92), rgba(10,15,26,0));
 }
-.panel-title { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin: 10px 0 6px; }
-.panel-title:first-child { margin-top: 0; }
+.hud-time { font-size: 15px; color: var(--muted); }
+.hud-time b { color: var(--text); font-size: 17px; font-variant-numeric: tabular-nums; }
+.controls { display: flex; gap: 6px; }
 
-.sp-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; }
-.dot { width: 11px; height: 11px; border-radius: 50%; flex: none; }
-.sp-name { font-size: 13px; flex: 1; }
-.sp-count { font-size: 14px; min-width: 34px; text-align: right; }
-.spark { opacity: 0.9; }
+/* ── 환경 자원 카드 (숫자만) ── */
+.res-cards {
+  position: absolute; top: 58px; left: 0; right: 0;
+  display: flex; gap: 6px; padding: 0 10px;
+  overflow-x: auto; scrollbar-width: none;
+  pointer-events: auto; touch-action: pan-x;
+}
+.res-cards::-webkit-scrollbar { display: none; }
+.res-card {
+  flex: 1 0 auto; min-width: 74px;
+  background: var(--panel); backdrop-filter: blur(6px);
+  border: 1px solid var(--line); border-radius: 10px;
+  padding: 5px 9px;
+  display: flex; flex-direction: column; gap: 1px;
+  transition: border-color 0.3s;
+}
+.res-card.danger { border-color: var(--danger); animation: danger-pulse 1.2s ease-in-out infinite; }
+@keyframes danger-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); }
+  50% { box-shadow: 0 0 8px 1px rgba(244, 63, 94, 0.45); }
+}
+.res-card-name { font-size: 10px; color: var(--muted); letter-spacing: 0.3px; white-space: nowrap; }
+.res-card-body { display: flex; align-items: baseline; gap: 4px; }
+.res-card-val { font-size: 15px; font-variant-numeric: tabular-nums; }
+.res-card-delta { font-size: 9px; }
+.res-card-delta.up { color: #4ade80; }
+.res-card-delta.down { color: #f87171; }
 
-.res-row { padding: 5px 0; }
-.res-head { display: flex; align-items: center; gap: 6px; font-size: 12px; margin-bottom: 3px; }
-.res-name { flex: 1; color: var(--muted); }
-.res-val { font-variant-numeric: tabular-nums; }
-.res-delta { font-size: 10px; }
-.res-delta.up { color: #4ade80; }
-.res-delta.down { color: #f87171; }
-.res-delta.flat { color: var(--muted); }
-.bar { height: 7px; border-radius: 4px; background: rgba(255,255,255,0.08); overflow: hidden; }
-.bar-fill { height: 100%; width: 0%; transition: width 0.2s ease; border-radius: 4px; }
-.spark-res { display: block; margin-top: 3px; width: 100%; }
+/* ── 하단 세포 바 ── */
+.sp-bar {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  display: flex; justify-content: center; gap: 8px; flex-wrap: wrap;
+  padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+  background: linear-gradient(0deg, rgba(10,15,26,0.92), rgba(10,15,26,0));
+}
+.sp-chip {
+  display: flex; align-items: center; gap: 7px;
+  background: var(--panel); backdrop-filter: blur(6px);
+  border: 1px solid var(--line); border-radius: 999px;
+  padding: 8px 14px; cursor: pointer; color: var(--text);
+  font-size: 13px; min-height: 40px;
+  transition: border-color 0.15s, transform 0.12s;
+}
+.sp-chip:hover { border-color: var(--accent); transform: translateY(-2px); }
+.sp-chip.empty { opacity: 0.45; }
+.sp-glyph { font-size: 13px; line-height: 1; }
+.sp-chip-name { color: var(--muted); }
+.sp-chip-count { font-size: 15px; font-variant-numeric: tabular-nums; min-width: 26px; text-align: right; }
+
+/* ── 도움말 모달 ── */
+.modal-overlay {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: rgba(6, 10, 20, 0.72); backdrop-filter: blur(3px);
+  pointer-events: auto; padding: 16px;
+}
+.modal-overlay.hidden { display: none; }
+.modal-card {
+  background: var(--panel-solid); border: 1px solid var(--line); border-radius: 16px;
+  padding: 18px 20px; width: 100%; max-width: 420px;
+  max-height: 82vh; overflow-y: auto; touch-action: pan-y;
+}
+.modal-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.modal-glyph { font-size: 22px; line-height: 1; }
+.modal-title { font-size: 19px; font-weight: 800; flex: 1; }
+.modal-close { min-width: 36px; min-height: 36px; padding: 4px 10px; }
+.modal-role { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 6px; }
+.modal-section {
+  font-size: 11px; color: var(--accent); text-transform: uppercase; letter-spacing: 1px;
+  margin: 14px 0 6px; padding-top: 10px; border-top: 1px solid var(--line);
+}
+.modal-rows { display: flex; flex-direction: column; gap: 4px; }
+.modal-row { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; }
+.modal-row span { color: var(--muted); flex: none; }
+.modal-row b { text-align: right; font-weight: 600; }
+.modal-empty { font-size: 13px; color: var(--muted); }
+.evo-item { padding: 7px 0; border-bottom: 1px dashed var(--line); }
+.evo-item:last-child { border-bottom: none; }
+.evo-title { font-size: 13px; font-weight: 700; margin-bottom: 2px; }
+.evo-line { font-size: 12px; color: var(--muted); }
 
 /* ── 선택지 오버레이 ── */
 .choice-overlay {
@@ -103,6 +157,7 @@ html, body {
 .gameover-overlay {
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
   background: rgba(6, 10, 20, 0.85); backdrop-filter: blur(4px);
+  pointer-events: auto;
 }
 .gameover-overlay.hidden { display: none; }
 .gameover-card {
@@ -118,7 +173,7 @@ html, body {
 .btn-restart { width: 100%; background: var(--accent); color: #04121f; border: none; font-size: 16px; padding: 12px; }
 
 /* ── 피드백 토스트 ── */
-.feedback-layer { position: absolute; right: 14px; bottom: 14px; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+.feedback-layer { position: absolute; right: 14px; bottom: 74px; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
 .toast {
   background: var(--panel-solid); border: 1px solid var(--line); border-left: 3px solid var(--accent);
   border-radius: 10px; padding: 8px 12px; min-width: 180px; max-width: 260px;
@@ -131,9 +186,12 @@ html, body {
 
 /* ── 모바일/세로 ── */
 @media (max-width: 720px) {
-  .hud-side { width: 210px; font-size: 12px; top: 50px; }
-  .brand { font-size: 15px; }
-  .stats { font-size: 11px; gap: 8px; }
+  .res-cards { top: 54px; }
+  .res-card { min-width: 66px; padding: 4px 8px; }
+  .res-card-val { font-size: 14px; }
+  .sp-chip { padding: 7px 11px; font-size: 12px; }
+  .sp-chip-name { display: inline; }
   .choice-card { width: 88vw; min-height: auto; }
   .choice-grid { gap: 10px; }
+  .feedback-layer { bottom: 66px; right: 10px; }
 }
