@@ -50,20 +50,20 @@ const rawSpecies: SpeciesDef[] = [
     radius: 4.5,
     moveSpeed: 24,
     moveMode: 'seekPrey', // 광합성 세포를 뜯어먹는 초식자
-    vision: 200, // 시야를 넓혀 멀리 있는 광합성도 탐지(중앙 배회와 병행)
+    vision: 170, // 먹이 탐지와 피난처(과도한 절멸 방지)의 절충
     intake: {},
     output: {},
     energyFromIntake: 0,
     scavenge: {},
     energyFromScavenge: 0,
-    upkeep: 1.4,
+    upkeep: 1.0, // 낮은 기초대사 → 먹이 부족 시기를 더 잘 버팀
     respires: true,
     corpseAppetite: 0, // 시체는 먹지 않는다(분해 세포의 역할) — 오직 광합성 세포 포식으로만 산다
     energyFromCorpse: 0,
     preyOn: ['photosynth'],
-    attackEnergy: 16,
+    attackEnergy: 22, // 포식 1회당 에너지↑ → 번식 여유
     eatCooldown: 2.0, // 소화 시간(배부름) — 광합성 급속 절멸 방지와 생존 사이의 절충
-    divideEnergy: 44, // 낮춰서 더 쉽게 번식 → 조기 멸종 방지
+    divideEnergy: 40, // 낮춰서 더 쉽게 번식 → 조기 멸종 방지
     divideCost: 6,
     divideCooldown: 6,
     maxEnergy: 110,
@@ -80,20 +80,20 @@ const rawSpecies: SpeciesDef[] = [
     radius: 5,
     moveSpeed: 32,
     moveMode: 'seekPrey',
-    vision: 340, // 넓은 시야 → 멀리 흩어진 소비 세포도 추적
+    vision: 240, // 시야를 낮춰 소비 세포에 공간적 피난처를 준다(과도한 절멸 방지)
     intake: {},
     output: {},
     energyFromIntake: 0,
     scavenge: {},
     energyFromScavenge: 0,
-    upkeep: 1.8,
+    upkeep: 1.6,
     respires: true,
     corpseAppetite: 0,
     energyFromCorpse: 0,
     preyOn: ['consumer'],
     attackEnergy: 24,
-    eatCooldown: 3.0, // 소화가 오래 걸림 → 소비 세포를 과도하게 절멸시키지 않도록
-    divideEnergy: 88, // 낮췄지만(100→88) 과도한 포식자 폭증은 막아 소비 세포와 공존
+    eatCooldown: 3.5, // 소화가 오래 걸림 → 소비 세포를 과도하게 절멸시키지 않도록
+    divideEnergy: 110, // 소비 세포 과증식을 억제할 만큼은 번식하되 절멸시키진 않는 중간값
     divideCost: 10,
     divideCooldown: 14,
     maxEnergy: 120,

@@ -4,8 +4,8 @@ import type { World } from '../World';
 
 const neighbors: number[] = [];
 
-/** 시체 질량 1을 대사할 때 풀로 되돌리는 CO₂ 양 (탄소 순환 복귀) */
-export const CORPSE_CO2_PER_MASS = 0.3;
+/** 시체 질량 1을 대사할 때 풀로 되돌리는 CO₂ 양 (탄소 순환 복귀 — 대기 공급이 없으므로 핵심) */
+export const CORPSE_CO2_PER_MASS = 1.4;
 
 /**
  * 시체 섭식 시스템: corpseAppetite가 있는 세포(소비/분해)가 근접한 시체에서 유기물을 먹는다.
