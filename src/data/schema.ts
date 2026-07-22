@@ -7,7 +7,7 @@ const partialResources = z.record(resourceKey, z.number()).default({});
 
 const geneField = z.enum([
   'moveSpeed', 'vision', 'energyFromIntake', 'upkeep', 'attackEnergy',
-  'divideEnergy', 'maxEnergy', 'lifespan', 'toxicityTolerance', 'energyFromCorpse',
+  'divideEnergy', 'maxEnergy', 'toxicityTolerance', 'energyFromCorpse',
 ]);
 
 export const speciesSchema = z.object({
@@ -25,6 +25,7 @@ export const speciesSchema = z.object({
   scavenge: partialResources,
   energyFromScavenge: z.number().nonnegative().default(0),
   upkeep: z.number().nonnegative(),
+  respires: z.boolean().default(true),
   corpseAppetite: z.number().nonnegative().default(0),
   energyFromCorpse: z.number().nonnegative().default(0),
   preyOn: z.array(speciesId).default([]),
@@ -34,7 +35,6 @@ export const speciesSchema = z.object({
   divideCost: z.number().nonnegative().default(0),
   divideCooldown: z.number().nonnegative(),
   maxEnergy: z.number().positive(),
-  lifespan: z.number().positive(),
   toxicityTolerance: z.number().nonnegative(),
   corpseOrganic: z.number().nonnegative(),
   corpseToxicity: z.number().nonnegative(),
@@ -54,6 +54,9 @@ export const environmentSchema = z.object({
   respirationRate: z.number(),
   respirationCo2Ratio: z.number(),
   suffocationPenalty: z.number(),
+  o2Atmosphere: z.number().nonnegative().default(0),
+  co2Atmosphere: z.number().nonnegative().default(0),
+  atmExchange: z.number().nonnegative().default(0),
   // 시체 시스템
   initialCorpses: z.number().nonnegative().default(0),
   corpseRotRate: z.number().nonnegative().default(0),

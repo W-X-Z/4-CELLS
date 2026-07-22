@@ -41,7 +41,6 @@ export const GENE_LABELS: Record<GeneField, string> = {
   attackEnergy: '포식 에너지',
   divideEnergy: '분열 에너지',
   maxEnergy: '최대 에너지',
-  lifespan: '수명',
   toxicityTolerance: '독성 내성',
   energyFromCorpse: '시체 섭취 효율',
 };

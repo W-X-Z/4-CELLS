@@ -21,12 +21,13 @@ const rawSpecies: SpeciesDef[] = [
     moveSpeed: 8,
     moveMode: 'drift',
     vision: 0,
-    intake: { co2: 1.8 },
-    output: { oxygen: 4.5 }, // 자기 그늘로 개체수가 제한되므로 O₂는 원래대로 순생산
+    intake: { co2: 1.0 }, // CO₂를 적게 써야 제한된 CO₂ 공급으로 더 많은 광합성이 유지된다
+    output: { oxygen: 2.0 }, // o2out×respirationCo2Ratio ≈ co2in 이 되도록(탄소 균형점)
     energyFromIntake: 6,
     scavenge: {},
     energyFromScavenge: 0,
     upkeep: 2,
+    respires: false, // 광합성: 호흡하지 않고 광합성으로만 에너지
     corpseAppetite: 0,
     energyFromCorpse: 0,
     preyOn: [],
@@ -36,7 +37,6 @@ const rawSpecies: SpeciesDef[] = [
     divideCost: 12, // 분열마다 에너지 소각 → CO₂(광합성 원료)가 마르면 분열도 멈춘다
     divideCooldown: 5,
     maxEnergy: 100,
-    lifespan: 90,
     toxicityTolerance: 400,
     corpseOrganic: 6,
     corpseToxicity: 1,
@@ -57,16 +57,16 @@ const rawSpecies: SpeciesDef[] = [
     scavenge: {},
     energyFromScavenge: 0,
     upkeep: 1.4,
+    respires: true,
     corpseAppetite: 0, // 시체는 먹지 않는다(분해 세포의 역할) — 오직 광합성 세포 포식으로만 산다
     energyFromCorpse: 0,
     preyOn: ['photosynth'],
     attackEnergy: 16,
-    eatCooldown: 3.5, // 소화 시간을 늘려 광합성을 급속 절멸시키지 않도록(배부름 강화)
-    divideEnergy: 66, // 광합성이 자기 그늘로 안정되므로 소비 세포 번식을 완화
+    eatCooldown: 2.0, // 소화 시간(배부름) — 광합성 급속 절멸 방지와 생존 사이의 절충
+    divideEnergy: 60,
     divideCost: 8,
     divideCooldown: 6,
     maxEnergy: 110,
-    lifespan: 90,
     toxicityTolerance: 350,
     corpseOrganic: 7,
     corpseToxicity: 2,
@@ -87,6 +87,7 @@ const rawSpecies: SpeciesDef[] = [
     scavenge: {},
     energyFromScavenge: 0,
     upkeep: 1.8,
+    respires: true,
     corpseAppetite: 0,
     energyFromCorpse: 0,
     preyOn: ['consumer'],
@@ -96,7 +97,6 @@ const rawSpecies: SpeciesDef[] = [
     divideCost: 14,
     divideCooldown: 14,
     maxEnergy: 120,
-    lifespan: 100,
     toxicityTolerance: 300,
     corpseOrganic: 9,
     corpseToxicity: 3,
@@ -117,6 +117,7 @@ const rawSpecies: SpeciesDef[] = [
     scavenge: { toxicity: 4 }, // 전역 독성을 흡수해 정화(보너스 에너지)
     energyFromScavenge: 2,
     upkeep: 0.9,
+    respires: true,
     corpseAppetite: 5, // 시체를 먹어 유기물을 순환 — 방치 부패(독성)를 막는 청소부
     energyFromCorpse: 2.2,
     preyOn: [],
@@ -126,7 +127,6 @@ const rawSpecies: SpeciesDef[] = [
     divideCost: 10,
     divideCooldown: 7,
     maxEnergy: 90,
-    lifespan: 100,
     toxicityTolerance: 800,
     corpseOrganic: 4,
     corpseToxicity: 0,

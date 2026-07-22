@@ -2,9 +2,9 @@ import { eff } from '../genetics';
 import type { World } from '../World';
 
 /**
- * 사망 시스템: 아사(에너지 0)·수명·독성 피해로 사망 처리.
- * 사망 세포는 유기물/독성을 담은 "시체(Corpse)"를 남긴다 -> 자원 순환의 마지막 고리.
- * 독성은 즉시 풀에 더해지지 않고, 시체가 방치되어 부패할 때 서서히 방출된다.
+ * 사망 시스템: 에너지가 0이 되면 사망 (수명 없음 — 에너지가 남아 있으면 계속 생존).
+ * 독성이 내성을 넘으면 초당 에너지 피해 → 결국 아사로 이어진다.
+ * 사망 세포는 유기물/독성을 담은 시체를 남긴다.
  */
 export function runDeath(world: World, dt: number): void {
   const { cells, env } = world;
@@ -20,15 +20,15 @@ export function runDeath(world: World, dt: number): void {
       continue;
     }
 
-    // 독성 피해
+    // 독성 피해 (내성 초과분에 비례해 에너지 감소)
     const tolerance = eff(def, c, 'toxicityTolerance');
     if (toxicity > tolerance) {
       const overflow = (toxicity - tolerance) / tolerance;
       c.energy -= overflow * 6 * dt;
     }
 
-    // 사망 조건
-    if (c.energy <= 0 || c.age >= eff(def, c, 'lifespan')) {
+    // 사망: 에너지 고갈
+    if (c.energy <= 0) {
       c.alive = false;
       world.spawnCorpse(c.x, c.y, def.corpseOrganic, def.corpseToxicity);
     }
