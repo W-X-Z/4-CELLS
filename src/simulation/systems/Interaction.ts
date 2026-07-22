@@ -15,6 +15,7 @@ export function runInteraction(world: World, _dt: number): void {
     if (!c.alive) continue;
     const def = world.species[c.species];
     if (def.moveMode !== 'seekPrey' || def.preyOn.length === 0) continue;
+    if (c.eatTimer > 0) continue; // 소화 중(배부름) -> 아직 못 먹음
     const maxE = eff(def, c, 'maxEnergy');
     // 배부르면 사냥하지 않음 -> 먹이 개체군이 전멸까지 사냥당하는 것을 완화
     if (c.energy >= maxE * 0.7) continue;
@@ -33,6 +34,7 @@ export function runInteraction(world: World, _dt: number): void {
         // 포식 성공: 먹이 사망 예약(사체는 Death에서 환원)
         prey.alive = false;
         c.energy = Math.min(maxE, c.energy + eff(def, c, 'attackEnergy'));
+        c.eatTimer = def.eatCooldown; // 소화 시간(배부름) 시작
         c.flash = 1;
         world.pushEvent({ type: 'predation', x: prey.x, y: prey.y });
         break; // 틱당 1마리만

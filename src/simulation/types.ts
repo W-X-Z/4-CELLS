@@ -81,9 +81,11 @@ export interface SpeciesDef {
   // 포식: seekPrey 종이 접촉 시 잡아먹는 대상
   preyOn: SpeciesId[];
   attackEnergy: number; // 포식 성공 시 얻는 에너지
+  eatCooldown: number; // 한 번 먹은 뒤 다시 먹기까지 소화 시간(초). 0이면 제약 없음(배부름 관리).
 
   // 분열
   divideEnergy: number; // 이 에너지 이상이면 분열 가능
+  divideCost: number; // 분열 시 소모(소각)되는 에너지. 무한 증식 방지 — 실제 먹이 순수익이 있어야 지속 분열.
   divideCooldown: number; // 분열 후 재분열까지 최소 초
   maxEnergy: number;
 
@@ -109,6 +111,7 @@ export interface Cell {
   energy: number;
   age: number;
   divideTimer: number;
+  eatTimer: number; // 소화 쿨다운. 0보다 크면 아직 못 먹는다(배부름).
   alive: boolean;
   // 렌더링 피드백용 순간 이벤트 플래그 (렌더러가 소비 후 리셋)
   flash: number; // 0..1, 최근 상호작용 강조

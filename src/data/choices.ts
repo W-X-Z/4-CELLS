@@ -61,13 +61,13 @@ const rawChoices: ChoiceDef[] = [
     boostWhen: [{ when: { kind: 'count', species: 'consumer', cmp: 'lt', value: 15 }, multiplier: 3 }],
   },
   {
-    id: 'consumer_scavenger',
-    title: '시식(屍食) 변이',
-    description: '시체에서 더 많은 에너지를 뽑아내는 소비 개체가 나타난다.',
+    id: 'consumer_jaws',
+    title: '포식 강화 변이',
+    description: '광합성 세포를 뜯을 때 더 많은 에너지를 얻는 소비 개체가 나타난다.',
     category: 'consumer',
-    effects: [{ kind: 'mutation', species: 'consumer', field: 'energyFromCorpse', value: 1.6, rate: 0.4 }],
+    effects: [{ kind: 'mutation', species: 'consumer', field: 'attackEnergy', value: 1.4, rate: 0.4 }],
     baseWeight: 5,
-    boostWhen: [{ when: { kind: 'corpses', cmp: 'gt', value: 60 }, multiplier: 3 }],
+    boostWhen: [{ when: { kind: 'count', species: 'consumer', cmp: 'lt', value: 12 }, multiplier: 3 }],
   },
 
   // ── 포식 세포 ──────────────────────────────

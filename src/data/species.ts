@@ -31,7 +31,9 @@ const rawSpecies: SpeciesDef[] = [
     energyFromCorpse: 0,
     preyOn: [],
     attackEnergy: 0,
+    eatCooldown: 0,
     divideEnergy: 58,
+    divideCost: 12, // 분열마다 에너지 소각 → CO₂(광합성 원료)가 마르면 분열도 멈춘다
     divideCooldown: 5,
     maxEnergy: 100,
     lifespan: 90,
@@ -55,11 +57,13 @@ const rawSpecies: SpeciesDef[] = [
     scavenge: {},
     energyFromScavenge: 0,
     upkeep: 1.4,
-    corpseAppetite: 2.5, // 광합성이 부족할 때 시체로 연명(기회적 잡식)
-    energyFromCorpse: 1.6,
+    corpseAppetite: 0, // 시체는 먹지 않는다(분해 세포의 역할) — 오직 광합성 세포 포식으로만 산다
+    energyFromCorpse: 0,
     preyOn: ['photosynth'],
     attackEnergy: 16,
-    divideEnergy: 52,
+    eatCooldown: 1.2, // 한 번 먹으면 소화 시간(배부름)
+    divideEnergy: 64, // 더 많이 먹어야 분열 → 광합성을 급격히 절멸시키는 과증식 완화
+    divideCost: 8,
     divideCooldown: 6,
     maxEnergy: 110,
     lifespan: 90,
@@ -87,7 +91,9 @@ const rawSpecies: SpeciesDef[] = [
     energyFromCorpse: 0,
     preyOn: ['consumer'],
     attackEnergy: 24,
+    eatCooldown: 2.0, // 큰 포식자일수록 소화가 오래 걸린다(배부름)
     divideEnergy: 100,
+    divideCost: 14,
     divideCooldown: 14,
     maxEnergy: 120,
     lifespan: 100,
@@ -115,7 +121,9 @@ const rawSpecies: SpeciesDef[] = [
     energyFromCorpse: 2.2,
     preyOn: [],
     attackEnergy: 0,
+    eatCooldown: 0, // 청소부 역할 유지 위해 시체 섭식엔 소화 제약을 두지 않음
     divideEnergy: 62,
+    divideCost: 10,
     divideCooldown: 7,
     maxEnergy: 90,
     lifespan: 100,
