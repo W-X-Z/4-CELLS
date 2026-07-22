@@ -4,13 +4,30 @@ import type { World } from '../World';
 
 const neighbors: number[] = [];
 
+/**
+ * 열에 따른 이동속도 배율(언덕형 곡선).
+ * 미지근할수록 대사가 활발해져 빨라지고(최적 온도에서 정점), 너무 뜨거워지면 급격히 둔해진다.
+ *   ambient(200) → 1.0, optimal(≈535) → 1.35, max(1000) → 0.4
+ */
+export function heatSpeedFactor(heat: number, ambient: number, maxHeat: number): number {
+  const optimal = ambient + (maxHeat - ambient) * 0.42;
+  if (heat <= optimal) {
+    const t = Math.max(0, (heat - ambient) / (optimal - ambient)); // 0..1
+    return 1 + t * 0.35; // 1.0 → 1.35
+  }
+  const t = Math.min(1, (heat - optimal) / (maxHeat - optimal)); // 0..1
+  return Math.max(0.4, 1.35 - t * 0.95); // 1.35 → 0.4 (과열 시 둔화)
+}
+
 /** 이동 시스템: 이동 방식에 따라 속도를 결정하고 위치를 적분한다. */
 export function runMovement(world: World, dt: number): void {
-  const { cells, rng, cfg } = world;
+  const { cells, rng, cfg, env } = world;
+  // 열은 전역 자원 → 모든 세포에 동일하게 작용하는 이동속도 배율
+  const heatFactor = heatSpeedFactor(env.resources.heat, cfg.ambientHeat, cfg.displayCaps.heat);
   for (let i = 0; i < cells.length; i++) {
     const c = cells[i];
     const def = world.species[c.species];
-    const speed = eff(def, c, 'moveSpeed');
+    const speed = eff(def, c, 'moveSpeed') * heatFactor;
     const maxE = eff(def, c, 'maxEnergy');
     const hungry = c.energy < maxE * 0.7;
 

@@ -54,7 +54,7 @@ export function runMetabolism(world: World, dt: number): void {
     }
 
     // 4) 대사열 발생
-    env.add('heat', (energyFromIntake * satisfaction + def.energyFromScavenge) * dt * 0.15);
+    env.add('heat', (energyFromIntake * satisfaction + def.energyFromScavenge) * dt * 0.09);
 
     // 5) 에너지 수지 (열 과잉 시 기초대사 증가)
     const heatPenalty = 1 + Math.max(0, env.resources.heat - 600) / 1200;

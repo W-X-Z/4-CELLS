@@ -10,8 +10,10 @@ export type Speed = 1 | 2 | 4;
 export interface GameOptions {
   seed: number;
   config?: EnvironmentConfig;
-  /** 누적 분열 수가 이만큼 늘 때마다 진화 선택지 제시(미지정 시 config 값) */
+  /** 첫 진화까지 필요한 누적 분열 수(미지정 시 config 값) */
   divisionsPerChoice?: number;
+  /** 진화마다 다음 간격에 더해지는 분열 수(미지정 시 config 값) */
+  divisionsGrowth?: number;
   /** UI 없이 자동 진행할 때 선택지를 고르는 함수(밸런스 테스트용) */
   autoChoice?: (choices: ChoiceDef[], world: World) => string | null;
 }
@@ -26,8 +28,12 @@ export class Game {
   readonly choices: ChoiceSystem;
   readonly seed: number;
   readonly stepDt: number;
-  /** 진화 선택지 트리거: 이만큼 분열이 누적될 때마다 제시 */
+  /** 첫 진화까지 필요한 누적 분열 수(기준 간격) */
   readonly divisionsPerChoice: number;
+  /** 진화가 한 번 일어날 때마다 다음 간격에 더해지는 분열 수(점진적으로 뜸해짐) */
+  readonly divisionsGrowth: number;
+  /** 지금까지 제시된 진화 횟수 */
+  evolutionCount = 0;
 
   phase: GamePhase = 'running';
   speed: Speed = 1;
@@ -51,7 +57,13 @@ export class Game {
     this.choices = new ChoiceSystem(this.world);
     this.stepDt = 1 / cfg.simRate;
     this.divisionsPerChoice = Math.max(1, opts.divisionsPerChoice ?? cfg.divisionsPerChoice);
+    this.divisionsGrowth = Math.max(0, opts.divisionsGrowth ?? cfg.divisionsGrowth);
     this.autoChoice = opts.autoChoice;
+  }
+
+  /** 다음 진화까지 필요한 분열 간격(진화가 진행될수록 점진적으로 커진다) */
+  divisionsUntilNext(): number {
+    return this.divisionsPerChoice + this.divisionsGrowth * this.evolutionCount;
   }
 
   /** 실시간 프레임에서 호출. realDtMs = 지난 프레임의 실제 경과(ms). */
@@ -72,7 +84,7 @@ export class Game {
         this.onGameOver?.(this.world.snapshot());
         return;
       }
-      if (this.world.divisions - this.lastChoiceDivisions >= this.divisionsPerChoice) {
+      if (this.world.divisions - this.lastChoiceDivisions >= this.divisionsUntilNext()) {
         this.offerChoices();
         return; // 선택 대기(일시정지)
       }
@@ -84,6 +96,7 @@ export class Game {
     this.lastChoiceDivisions = this.world.divisions;
     const choices = this.choices.generate(3);
     if (choices.length === 0) return;
+    this.evolutionCount++; // 다음 진화 간격이 divisionsGrowth만큼 늘어난다
     this.pendingChoices = choices;
 
     // 헤드리스 자동 진행

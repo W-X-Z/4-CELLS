@@ -44,16 +44,21 @@ const simRate = game.world.cfg.simRate;
 const totalTicks = seconds * simRate;
 let lastReport = 0;
 let lastChoiceDivisions = 0;
+let evoCount = 0;
 
 while (!game.world.gameOver && game.world.tick < totalTicks) {
   // 헤드리스: advance 대신 직접 스텝(속도 배수 무의미)
   game.world.step(game.stepDt);
-  // 진화 트리거: 누적 분열 수 기반
-  if (game.world.divisions - lastChoiceDivisions >= game.divisionsPerChoice) {
+  // 진화 트리거: 누적 분열 수 기반(진화가 진행될수록 간격이 점진적으로 늘어남)
+  const gap = game.divisionsPerChoice + game.divisionsGrowth * evoCount;
+  if (game.world.divisions - lastChoiceDivisions >= gap) {
     lastChoiceDivisions = game.world.divisions;
     const choices = game.choices.generate(3);
-    const id = pick(choices, game.world);
-    if (id) game.choices.apply(id);
+    if (choices.length) {
+      evoCount++;
+      const id = pick(choices, game.world);
+      if (id) game.choices.apply(id);
+    }
   }
   if (game.world.time - lastReport >= 15) {
     lastReport = game.world.time;
