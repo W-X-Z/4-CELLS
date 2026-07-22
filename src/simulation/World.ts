@@ -221,15 +221,21 @@ export class World {
    */
   resize(width: number, height: number): void {
     if (width === this.cfg.width && height === this.cfg.height) return;
+    // 위치를 새 경계에 '비례 확대/축소'한다.
+    // 초기 세포는 레이아웃 확정 전(상/하단 바가 비어 캔버스가 다른 비율일 때)의 폭으로 뿌려진 뒤,
+    // 실제 캔버스 크기로 리사이즈된다. 단순 클램프면 개체들이 한쪽(왼쪽)에 몰려 반대편에 여백이 생긴다.
+    // 비례 스케일은 분포를 그대로 유지해 새 경계를 고르게 채우고, 이후 창 리사이즈에도 자연스럽다.
+    const sx = this.cfg.width > 0 ? width / this.cfg.width : 1;
+    const sy = this.cfg.height > 0 ? height / this.cfg.height : 1;
     this.cfg.width = width;
     this.cfg.height = height;
     for (const c of this.cells) {
-      c.x = clamp(c.x, 0, width);
-      c.y = clamp(c.y, 0, height);
+      c.x = clamp(c.x * sx, 0, width);
+      c.y = clamp(c.y * sy, 0, height);
     }
     for (const co of this.corpses) {
-      co.x = clamp(co.x, 0, width);
-      co.y = clamp(co.y, 0, height);
+      co.x = clamp(co.x * sx, 0, width);
+      co.y = clamp(co.y * sy, 0, height);
     }
   }
 
