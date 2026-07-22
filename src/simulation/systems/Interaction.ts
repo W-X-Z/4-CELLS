@@ -34,7 +34,7 @@ export function runInteraction(world: World, _dt: number): void {
         // 포식 성공: 먹이 사망 예약(사체는 Death에서 환원)
         prey.alive = false;
         c.energy = Math.min(maxE, c.energy + eff(def, c, 'attackEnergy'));
-        c.eatTimer = def.eatCooldown; // 소화 시간(배부름) 시작
+        c.eatTimer = eff(def, c, 'eatCooldown'); // 소화 시간(배부름) 시작
         c.flash = 1;
         world.pushEvent({ type: 'predation', x: prey.x, y: prey.y });
         break; // 틱당 1마리만

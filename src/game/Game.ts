@@ -35,6 +35,11 @@ export class Game {
   /** 지금까지 제시된 진화 횟수 */
   evolutionCount = 0;
 
+  /** 진화 1회당 선택지 리롤(다시 뽑기) 허용 횟수 */
+  readonly maxRerolls = 2;
+  /** 이번 진화에서 남은 리롤 횟수 */
+  rerollsLeft = 0;
+
   phase: GamePhase = 'running';
   speed: Speed = 1;
   pendingChoices: ChoiceDef[] = [];
@@ -98,6 +103,7 @@ export class Game {
     if (choices.length === 0) return;
     this.evolutionCount++; // 다음 진화 간격이 divisionsGrowth만큼 늘어난다
     this.pendingChoices = choices;
+    this.rerollsLeft = this.maxRerolls; // 이번 진화의 리롤 횟수 초기화
 
     // 헤드리스 자동 진행
     if (this.autoChoice) {
@@ -108,6 +114,20 @@ export class Game {
 
     this.phase = 'choosing';
     this.onChoicesReady?.(choices);
+  }
+
+  /**
+   * 선택지 다시 뽑기(리롤). 진화 대기 중일 때만, 남은 횟수 안에서 새 후보 3개를 뽑는다.
+   * 선택을 아직 고르지 않았으므로 유전자풀은 바뀌지 않는다(진화 카운트/간격도 그대로).
+   */
+  reroll(): boolean {
+    if (this.phase !== 'choosing' || this.rerollsLeft <= 0) return false;
+    const choices = this.choices.generate(3);
+    if (choices.length === 0) return false;
+    this.rerollsLeft--;
+    this.pendingChoices = choices;
+    this.onChoicesReady?.(choices);
+    return true;
   }
 
   resolveChoice(choiceId: string): void {

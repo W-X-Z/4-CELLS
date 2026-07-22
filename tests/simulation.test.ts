@@ -3,6 +3,8 @@ import { Game } from '../src/game/Game';
 import { World } from '../src/simulation/World';
 import { environmentConfig } from '../src/data/environments';
 import { RESOURCE_KEYS } from '../src/simulation/types';
+import { choiceDefs } from '../src/data/choices';
+import { eff } from '../src/simulation/genetics';
 
 function runWorld(seed: number, ticks: number): World {
   const w = new World(seed, environmentConfig);
@@ -89,6 +91,38 @@ describe('돌연변이(유전자풀) 선택지', () => {
     game.world.env.resources.oxygen = 100; // 위기 상황 조성
     const choices = game.choices.generate(3);
     expect(choices.length).toBeGreaterThan(0);
+  });
+
+  it('선택지 풀은 종별 9종(총 36종)이고 스키마를 통과한다', () => {
+    expect(choiceDefs.length).toBe(36);
+    for (const sp of ['photosynth', 'consumer', 'predator', 'decomposer']) {
+      expect(choiceDefs.filter((c) => c.category === sp).length).toBe(9);
+    }
+  });
+
+  it('새 유전 필드(분열 비용)가 eff 실효 수치에 반영된다', () => {
+    const game = new Game({ seed: 5, autoChoice: () => null });
+    const cell = game.world.cells.find((c) => c.species === 'consumer')!;
+    const baseCost = game.world.species.consumer.divideCost;
+    cell.genes = { ...(cell.genes ?? {}), divideCost: 0.5 };
+    expect(eff(game.world.species.consumer, cell, 'divideCost')).toBeCloseTo(baseCost * 0.5);
+  });
+});
+
+describe('진화 선택지 리롤(다시 뽑기)', () => {
+  it('진화 대기 중 최대 2회까지 다시 뽑을 수 있다', () => {
+    const game = new Game({ seed: 5, divisionsPerChoice: 20 });
+    let offered = 0;
+    game.onChoicesReady = () => { offered++; };
+    for (let i = 0; i < 400 && offered === 0; i++) game.advance(1000 / environmentConfig.simRate);
+    expect(game.phase).toBe('choosing');
+    expect(game.rerollsLeft).toBe(2);
+    expect(game.reroll()).toBe(true); // 1회
+    expect(game.rerollsLeft).toBe(1);
+    expect(game.reroll()).toBe(true); // 2회
+    expect(game.rerollsLeft).toBe(0);
+    expect(game.reroll()).toBe(false); // 초과 불가
+    expect(game.pendingChoices.length).toBeGreaterThan(0);
   });
 });
 

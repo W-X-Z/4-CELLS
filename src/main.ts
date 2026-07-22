@@ -134,6 +134,8 @@ async function bootstrap(): Promise<void> {
     if (def) feedback.showEffects(def.title, def.effects);
     game.resolveChoice(id);
   });
+  // 다시 뽑기: 진화 대기 중 남은 횟수만큼 후보를 새로 뽑는다(선택 전이라 유전자풀 불변).
+  choicePanel.onReroll = () => game.reroll();
 
   const gameOver = new GameOverPanel(uiRoot, () => {
     // 새 시드로 재시작(깔끔한 상태 초기화)
@@ -142,7 +144,7 @@ async function bootstrap(): Promise<void> {
     location.search = p.toString();
   });
 
-  game.onChoicesReady = (choices) => choicePanel.show(choices);
+  game.onChoicesReady = (choices) => choicePanel.show(choices, game.rerollsLeft);
   game.onGameOver = (snap) => gameOver.show(snap, seed);
 
   // ── 메인 루프 (렌더는 app.ticker, 시뮬은 고정 타임스텝) ──

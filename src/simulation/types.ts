@@ -37,7 +37,10 @@ export type GeneField =
   | 'divideEnergy'
   | 'maxEnergy'
   | 'toxicityTolerance'
-  | 'energyFromCorpse';
+  | 'energyFromCorpse'
+  | 'eatCooldown' // 소화 시간(낮을수록 자주 먹음)
+  | 'divideCost' // 분열 시 소각 에너지(낮을수록 분열 후 손실↓)
+  | 'corpseAppetite'; // 시체 섭식 속도(높을수록 빨리 치움)
 
 /**
  * 유전자풀에 등록되는 돌연변이 하나.

@@ -43,6 +43,9 @@ export const GENE_LABELS: Record<GeneField, string> = {
   maxEnergy: '최대 에너지',
   toxicityTolerance: '독성 내성',
   energyFromCorpse: '시체 섭취 효율',
+  eatCooldown: '소화 시간',
+  divideCost: '분열 비용',
+  corpseAppetite: '시체 섭식 속도',
 };
 
 /** 배율(1.0 기준)을 "+35% / -25%" 로 */

@@ -172,6 +172,12 @@ html, body {
 .choice-desc { font-size: 13px; color: var(--muted); line-height: 1.5; flex: 1; }
 .choice-rate { font-size: 12px; color: var(--muted); }
 .choice-rate b { color: var(--text); font-variant-numeric: tabular-nums; }
+.choice-reroll {
+  margin-top: 4px; font-size: 15px; padding: 10px 20px;
+  background: var(--panel-solid); border: 1px solid var(--line);
+}
+.choice-reroll:not(:disabled):hover { border-color: var(--accent); }
+.choice-reroll:disabled { opacity: 0.4; cursor: not-allowed; }
 .choice-card { border-top: 3px solid var(--sp-color, var(--accent)); }
 .choice-card:hover { border-color: var(--sp-color, var(--accent)); }
 .cat-photosynth { --sp-color: #4ade80; }

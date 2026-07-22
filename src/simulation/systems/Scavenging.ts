@@ -19,6 +19,7 @@ export function runScavenging(world: World, dt: number): void {
     const def = world.species[c.species];
     if (def.corpseAppetite <= 0) continue;
     if (c.eatTimer > 0) continue; // 소화 중(배부름)
+    const appetite = eff(def, c, 'corpseAppetite');
     const maxE = eff(def, c, 'maxEnergy');
     if (c.energy >= maxE * 0.95) continue; // 거의 배부르면 섭식 안 함
 
@@ -42,14 +43,14 @@ export function runScavenging(world: World, dt: number): void {
     if (best < 0) continue;
 
     const co = world.corpses[best];
-    const eat = Math.min(co.mass, def.corpseAppetite * dt);
+    const eat = Math.min(co.mass, appetite * dt);
     // 섭식으로 질량이 줄면 그만큼 독성 방출도 줄어든다(방출량 ∝ 남은 질량). 다 먹히면 사라진다.
     co.mass -= eat;
     co.flash = 1;
 
     const energyFromCorpse = eff(def, c, 'energyFromCorpse');
     c.energy = Math.min(maxE, c.energy + eat * energyFromCorpse);
-    if (def.eatCooldown > 0) c.eatTimer = def.eatCooldown;
+    if (def.eatCooldown > 0) c.eatTimer = eff(def, c, 'eatCooldown');
     c.flash = Math.max(c.flash, 0.7);
     env.add('heat', eat * energyFromCorpse * dt * 0.1);
     // 분해: 시체(고정된 탄소)를 대사하며 CO₂를 되돌린다 → 탄소 순환을 닫는다
