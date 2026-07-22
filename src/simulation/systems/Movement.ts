@@ -54,7 +54,7 @@ export function runMovement(world: World, dt: number): void {
         }
       }
       if (found) steer(c, tx, ty, speed);
-      else randomWalk(c, speed, dt, rng);
+      else roam(c, speed, dt, rng, cfg.width, cfg.height);
     } else if (def.moveMode === 'seekResource' && hungry) {
       // 가장 가까운 시체를 향해 조향 (분해 세포)
       const vision = eff(def, c, 'vision');
@@ -75,7 +75,7 @@ export function runMovement(world: World, dt: number): void {
         }
       }
       if (found) steer(c, tx, ty, speed);
-      else randomWalk(c, speed, dt, rng);
+      else roam(c, speed, dt, rng, cfg.width, cfg.height);
     } else {
       randomWalk(c, speed, dt, rng);
     }
@@ -96,6 +96,31 @@ function steer(c: { x: number; y: number; vx: number; vy: number }, tx: number, 
   const len = Math.hypot(dx, dy) || 1;
   c.vx = (dx / len) * speed;
   c.vy = (dy / len) * speed;
+}
+
+/**
+ * 배회: 먹이를 못 찾은 사냥꾼이 무작정 벽에 부딪히지 않고, 월드 중앙 쪽으로 약하게
+ * 이끌리며 넓게 탐색한다. 구석/화면 밖에 갇히지 않고 개체가 모이는 중앙으로 유도된다.
+ */
+function roam(
+  c: { x: number; y: number; vx: number; vy: number },
+  speed: number,
+  dt: number,
+  rng: { range(a: number, b: number): number },
+  width: number,
+  height: number,
+): void {
+  const dx = width / 2 - c.x;
+  const dy = height / 2 - c.y;
+  const len = Math.hypot(dx, dy) || 1;
+  const bias = 0.35; // 중앙 유인 강도(0=순수 무작위, 1=곧장 중앙)
+  c.vx = c.vx * 0.94 + ((dx / len) * bias + rng.range(-1, 1)) * speed * dt * 6;
+  c.vy = c.vy * 0.94 + ((dy / len) * bias + rng.range(-1, 1)) * speed * dt * 6;
+  const sp = Math.hypot(c.vx, c.vy);
+  if (sp > speed) {
+    c.vx = (c.vx / sp) * speed;
+    c.vy = (c.vy / sp) * speed;
+  }
 }
 
 function randomWalk(c: { vx: number; vy: number }, speed: number, dt: number, rng: { range(a: number, b: number): number }): void {

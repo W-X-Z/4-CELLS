@@ -11,9 +11,18 @@ import { environmentConfig } from './data/environments';
 import { choiceDefs } from './data/choices';
 
 const canvas = document.getElementById('stage') as HTMLCanvasElement;
+const stageWrap = document.getElementById('stage-wrap') as HTMLElement;
 const uiRoot = document.getElementById('ui-root') as HTMLElement;
 const hudTop = document.getElementById('hud-top') as HTMLElement;
 const hudBottom = document.getElementById('hud-bottom') as HTMLElement;
+
+// 월드 크기의 기준이 되는 "보이는 캔버스 영역"(상/하단 UI 제외). 레이아웃 전이면 창 크기로 대체.
+function viewSize(): { w: number; h: number } {
+  return {
+    w: stageWrap.clientWidth || window.innerWidth,
+    h: stageWrap.clientHeight || window.innerHeight,
+  };
+}
 
 // 시드: URL ?seed= 로 재현 가능. 없으면 생성 후 URL에 기록.
 const params = new URLSearchParams(location.search);
@@ -24,8 +33,9 @@ if (!params.has('seed')) {
 }
 
 const quality = detectQuality();
-// 월드 크기를 화면 비율에 맞춤 (면적은 유지 → 밀도/밸런스 보존, 레터박스 제거)
-const worldSize = computeWorldSize(window.innerWidth, window.innerHeight);
+// 월드 크기를 "보이는 캔버스" 비율에 맞춤 (면적은 유지 → 밀도/밸런스 보존, 레터박스 제거)
+const initialView = viewSize();
+const worldSize = computeWorldSize(initialView.w, initialView.h);
 const config = { ...environmentConfig, maxCells: quality.maxCells, ...worldSize };
 
 const game = new Game({ seed, config });
@@ -145,15 +155,23 @@ async function bootstrap(): Promise<void> {
     }
   });
 
-  // ── 리사이즈/회전: 월드 경계를 새 화면 비율로 갱신 ──
+  // ── 리사이즈/회전: 월드 경계를 "보이는 캔버스" 비율로 갱신 ──
   let resizeTimer = 0;
-  window.addEventListener('resize', () => {
+  const syncWorldToView = (): void => {
+    const view = viewSize();
+    const { width, height } = computeWorldSize(view.w, view.h);
+    game.world.resize(width, height);
+  };
+  const scheduleSync = (): void => {
     clearTimeout(resizeTimer);
-    resizeTimer = window.setTimeout(() => {
-      const { width, height } = computeWorldSize(window.innerWidth, window.innerHeight);
-      game.world.resize(width, height);
-    }, 150);
-  });
+    resizeTimer = window.setTimeout(syncWorldToView, 150);
+  };
+  window.addEventListener('resize', scheduleSync);
+  // HUD가 상/하단 바를 채운 뒤 캔버스 영역이 확정되므로, 그 크기에 맞춰 월드를 즉시 재동기화.
+  syncWorldToView();
+  if (typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(scheduleSync).observe(stageWrap);
+  }
 
   // ── 백그라운드 자동 일시정지 ──
   document.addEventListener('visibilitychange', () => {

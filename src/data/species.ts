@@ -48,9 +48,9 @@ const rawSpecies: SpeciesDef[] = [
     color: 0x60a5fa,
     shape: 'diamond',
     radius: 4.5,
-    moveSpeed: 22,
+    moveSpeed: 24,
     moveMode: 'seekPrey', // 광합성 세포를 뜯어먹는 초식자
-    vision: 150, // 좁은 시야 → 저밀도 광합성에 피난처
+    vision: 200, // 시야를 넓혀 멀리 있는 광합성도 탐지(중앙 배회와 병행)
     intake: {},
     output: {},
     energyFromIntake: 0,
@@ -78,9 +78,9 @@ const rawSpecies: SpeciesDef[] = [
     color: 0xf87171,
     shape: 'triangle',
     radius: 5,
-    moveSpeed: 30,
+    moveSpeed: 32,
     moveMode: 'seekPrey',
-    vision: 280, // 넓은 시야 → 드문 소비 세포도 추적, 개체군 유지
+    vision: 340, // 넓은 시야 → 멀리 흩어진 소비 세포도 추적
     intake: {},
     output: {},
     energyFromIntake: 0,

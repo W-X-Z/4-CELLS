@@ -36,6 +36,7 @@ export class PixiRenderer {
   };
   private world!: World;
   private quality!: QualityProfile;
+  private resizeObserver?: ResizeObserver;
 
   private root = new Container();
   private corpseLayer = new Container(); // 시체 (세포 아래)
@@ -70,6 +71,11 @@ export class PixiRenderer {
 
     this.resizeHandler();
     window.addEventListener('resize', this.resizeHandler);
+    // 컨테이너 크기 변화를 항상 추적(레이아웃이 나중에 확정돼도 캔버스가 정확히 맞도록)
+    if (typeof ResizeObserver !== 'undefined') {
+      this.resizeObserver = new ResizeObserver(() => this.resizeHandler());
+      this.resizeObserver.observe(this.resizeTarget);
+    }
     this.setupCamera(this.resizeTarget);
 
     this.stage.addChild(this.root);
@@ -395,6 +401,7 @@ export class PixiRenderer {
   }
 
   destroy(): void {
+    this.resizeObserver?.disconnect();
     window.removeEventListener('resize', this.resizeHandler);
     this.app.ticker.destroy();
     this.stage.destroy({ children: true, texture: true });
