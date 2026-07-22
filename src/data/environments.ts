@@ -55,13 +55,13 @@ export const environmentConfig: EnvironmentConfig = environmentSchema.parse({
   heatDissipation: 0.1, // 열 소산을 빠르게 — 열이 곧바로 상한에 붙지 않도록
   toxicityDecay: 0.04, // 비례 감쇠율(0~1). 시체 독성 방출량에 맞춰 평형 형성
   respirationRate: 0.9,
-  respirationCo2Ratio: 0.5, // O₂ 소비 대비 CO₂ 환원 — 호흡하는 세포가 탄소를 되돌린다
+  respirationCo2Ratio: 0.8, // O₂ 소비 대비 CO₂ 환원 — 호흡이 탄소를 되돌린다(대기 공급 없으므로 높게)
   suffocationPenalty: 2.2,
-  // 대기 교환: 광합성이 O₂를 밀어 올리고 CO₂를 끌어내리면 대기가 반대로 밀어 되돌린다.
-  // 교환을 빠르게 하면 과증식 후에도 CO₂가 빨리 회복돼 생존 개체가 안정적으로 남는다.
+  // 대기 교환 없음(0) — CO₂는 오직 다른 세포의 호흡·분해로만 공급된다.
+  // => 광합성 세포는 소비·포식·분해 세포에 의존하고, 그 종들이 무너지면 함께 붕괴한다(상호의존).
   o2Atmosphere: 500,
-  co2Atmosphere: 700,
-  atmExchange: 0.14,
+  co2Atmosphere: 500,
+  atmExchange: 0,
 
   initialCorpses: 45, // 시작 잔해: 분해/소비 세포가 초반에 굶지 않도록
 

@@ -43,21 +43,18 @@ describe('시뮬레이션 건전성', () => {
     expect(c.consumer + c.predator).toBeGreaterThan(0);
   });
 
-  // 대사 재설계(광합성 무호흡 + 수명 폐기 + 대기 교환) 후:
-  // 광합성 개체군이 대기 CO₂ 공급 한도 내에서 안정 — 무한 폭주도, 전멸도 하지 않는다.
-  it('대기 교환으로 광합성 개체군이 안정화된다(폭주/전멸하지 않음)', () => {
-    const w = runWorld(777, 600 * environmentConfig.simRate); // 600초
-    const c = w.counts();
-    expect(w.gameOver).toBe(false);
-    expect(c.photosynth).toBeGreaterThan(0);
-    expect(c.photosynth).toBeLessThan(400); // 대기 공급 한도 근처에서 평형 — 무한 폭주 없음
+  // 대기 CO₂ 공급이 없으므로 광합성 세포는 다른 세포의 호흡·분해가 내는 CO₂에 의존한다.
+  // 개입이 없으면 종간 균형이 무너져 결국 붕괴한다(게임이 끝난다).
+  it('개입이 없으면 결국 붕괴한다(생태계 취약성)', () => {
+    const w = runWorld(777, 600 * environmentConfig.simRate); // 최대 600초
+    expect(w.gameOver).toBe(true);
   });
 
   it('수명이 아니라 에너지 고갈로만 사망한다', () => {
-    // 자원이 충분하면 오래 살아남는 광합성 개체가 존재(수명 만료로 죽지 않음)
-    const w = runWorld(777, 400 * environmentConfig.simRate);
+    // 붕괴 전 구간: 세포가 유지되고, 살아 있는 세포의 에너지는 항상 양수(0 이하는 사망 처리됨).
+    const w = runWorld(2024, 60 * environmentConfig.simRate);
+    expect(w.cells.length).toBeGreaterThan(0);
     expect(w.counts().photosynth).toBeGreaterThan(0);
-    // 에너지가 음수인 세포는 존재하지 않는다(사망 처리됨)
     for (const cell of w.cells) expect(cell.energy).toBeGreaterThan(0);
   });
 });
