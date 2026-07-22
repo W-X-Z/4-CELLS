@@ -6,7 +6,7 @@ import { GENE_LABELS, mulLabel } from './FeedbackLayer';
 /** 종별 역할 설명 (생태계 순환에서의 위치) */
 const ROLE_TEXT: Record<SpeciesId, string> = {
   photosynth:
-    'CO₂를 흡수해 산소를 만드는 생태계의 엔진. 모든 세포는 호흡으로 산소를 쓰기 때문에, 광합성이 무너지면 산소가 고갈되어 전 세포가 질식하는 연쇄가 시작된다.',
+    'CO₂를 흡수해 산소를 만드는 생태계의 엔진. 스스로는 호흡하지 않고 광합성으로만 에너지를 쌓는다. 호흡하는 다른 세포들이 산소를 쓰므로, 광합성이 무너지면 산소가 고갈되어 전 세포가 질식한다.',
     consumer:
     '광합성 세포를 뜯어먹는 초식자. 오직 광합성 포식으로만 살아가며, 한 번 먹으면 소화 시간이 필요하다. 너무 많아지면 광합성을 과도하게 먹어 산소 생산이 무너지고 스스로도 질식한다.',
   predator:
@@ -110,8 +110,12 @@ export class InfoModal {
           ${metabLine(def.output) !== '없음' ? `<div class="modal-row"><span>생산</span><b>${metabLine(def.output)}</b></div>` : ''}
           ${metabLine(def.scavenge) !== '없음' ? `<div class="modal-row"><span>정화</span><b>${metabLine(def.scavenge)}</b></div>` : ''}
           ${corpseLine}
-          <div class="modal-row"><span>호흡(산소 소비)</span><b>${Math.round(def.upkeep * world.cfg.respirationRate * 10) / 10}/s</b></div>
-          <div class="modal-row"><span>수명</span><b>${Math.round(def.lifespan)}초</b></div>
+          ${
+            def.respires
+              ? `<div class="modal-row"><span>호흡(산소 소비)</span><b>${Math.round(def.upkeep * world.cfg.respirationRate * 10) / 10}/s</b></div>`
+              : `<div class="modal-row"><span>호흡</span><b>안 함 (광합성 전용)</b></div>`
+          }
+          <div class="modal-row"><span>기초 에너지 소모</span><b>${Math.round(def.upkeep * 10) / 10}/s</b></div>
         </div>
 
         <div class="modal-section">현재 상태</div>

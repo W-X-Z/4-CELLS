@@ -19,6 +19,9 @@ export class Environment {
     for (const key of RESOURCE_KEYS) {
       if (this.regen[key] !== 0) r[key] += this.regen[key] * dt;
     }
+    // 대기 교환: O₂·CO₂가 대기 기준값을 향해 수렴 (CO₂ 고갈 완충 + O₂ 폭주 억제)
+    r.oxygen = damp(r.oxygen, this.cfg.o2Atmosphere, this.cfg.atmExchange, dt);
+    r.co2 = damp(r.co2, this.cfg.co2Atmosphere, this.cfg.atmExchange, dt);
     // 열 소산(주변 온도로 수렴)
     r.heat = damp(r.heat, this.cfg.ambientHeat, this.cfg.heatDissipation, dt);
     // 독성 자연 감쇠

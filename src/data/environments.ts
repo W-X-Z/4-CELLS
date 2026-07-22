@@ -15,6 +15,10 @@ export interface EnvironmentConfig {
   respirationRate: number; // upkeep 1당 초당 O₂ 소비량
   respirationCo2Ratio: number; // 소비한 O₂ 대비 배출 CO₂ 비율
   suffocationPenalty: number; // O₂ 부족 시 부족분에 비례해 추가로 잃는 에너지 배수(질식)
+  // 대기 교환: O₂·CO₂가 대기 기준값을 향해 서서히 수렴한다(CO₂ 고갈·O₂ 폭주를 완충).
+  o2Atmosphere: number;
+  co2Atmosphere: number;
+  atmExchange: number; // 기준값으로 수렴하는 속도(0~1, 클수록 빠름)
   // 시체 시스템
   initialCorpses: number; // 시작 시 흩뿌리는 잔해(분해자 부트스트랩용)
   corpseRotRate: number; // 초당 부패로 사라지는 시체 질량(방치 시 독성 방출)
@@ -52,8 +56,12 @@ export const environmentConfig: EnvironmentConfig = environmentSchema.parse({
   heatDissipation: 0.1, // 열 소산을 빠르게 — 열이 곧바로 상한에 붙지 않도록
   toxicityDecay: 2,
   respirationRate: 0.9,
-  respirationCo2Ratio: 0.45, // O₂ 소비 대비 CO₂ 환원 — 호흡이 탄소를 되돌린다(순환 균형)
+  respirationCo2Ratio: 0.5, // O₂ 소비 대비 CO₂ 환원 — 호흡하는 세포가 탄소를 되돌린다
   suffocationPenalty: 2.2,
+  // 대기 교환: 광합성이 O₂를 밀어 올리고 CO₂를 끌어내리면 대기가 반대로 밀어 되돌린다.
+  o2Atmosphere: 500,
+  co2Atmosphere: 600,
+  atmExchange: 0.08,
 
   initialCorpses: 45, // 시작 잔해: 분해/소비 세포가 초반에 굶지 않도록
   corpseRotRate: 0.3, // 방치된 시체가 서서히 부패하며 독성을 방출(느릴수록 분해자가 찾을 시간이 늘어남)

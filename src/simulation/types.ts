@@ -36,7 +36,6 @@ export type GeneField =
   | 'attackEnergy'
   | 'divideEnergy'
   | 'maxEnergy'
-  | 'lifespan'
   | 'toxicityTolerance'
   | 'energyFromCorpse';
 
@@ -72,7 +71,9 @@ export interface SpeciesDef {
   // 기회적 정화: 있으면 소비(정화)하고 보너스 에너지를 얻지만, 없어도 굶지 않는다(satisfaction 미관여).
   scavenge: Partial<Resources>;
   energyFromScavenge: number; // scavenge 충족 비율에 곱해 얻는 초당 에너지
-  upkeep: number; // 초당 에너지 소모(기초 대사)
+  upkeep: number; // 초당 에너지 소모(기초 대사=에너지 감소). 밸런싱의 핵심 파라미터.
+  // 호흡 여부. 광합성 세포는 false(호흡 안 함, 광합성으로만 에너지). 나머지는 true(O₂ 소비→CO₂ 배출).
+  respires: boolean;
 
   // 시체 섭식: 근접한 시체에서 유기물 질량을 먹어 에너지를 얻는다(소비/분해 세포).
   corpseAppetite: number; // 초당 먹을 수 있는 시체 질량
@@ -89,8 +90,7 @@ export interface SpeciesDef {
   divideCooldown: number; // 분열 후 재분열까지 최소 초
   maxEnergy: number;
 
-  // 사망
-  lifespan: number; // 초 (수명)
+  // 사망 (수명 없음 — 에너지가 0이 되면 사망)
   toxicityTolerance: number; // 이 독성 이상이면 초당 피해
 
   // 사망 시 남기는 시체의 유기물 질량 / 독성 총량
@@ -109,7 +109,6 @@ export interface Cell {
   vx: number;
   vy: number;
   energy: number;
-  age: number;
   divideTimer: number;
   eatTimer: number; // 소화 쿨다운. 0보다 크면 아직 못 먹는다(배부름).
   alive: boolean;

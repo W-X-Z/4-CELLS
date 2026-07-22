@@ -43,14 +43,22 @@ describe('시뮬레이션 건전성', () => {
     expect(c.consumer + c.predator).toBeGreaterThan(0);
   });
 
-  // 자기 그늘(수용력) 도입 후: 광합성이 무한 폭주하지 않고 개체군이 안정화된다.
-  // (게임 방향 확정 전 잠정 — '붕괴 스테이크' 유지로 바꾸면 이 테스트도 함께 수정)
-  it('자기 그늘로 광합성 개체군이 안정화된다(폭주/전멸하지 않음)', () => {
+  // 대사 재설계(광합성 무호흡 + 수명 폐기 + 대기 교환) 후:
+  // 광합성 개체군이 대기 CO₂ 공급 한도 내에서 안정 — 무한 폭주도, 전멸도 하지 않는다.
+  it('대기 교환으로 광합성 개체군이 안정화된다(폭주/전멸하지 않음)', () => {
     const w = runWorld(777, 600 * environmentConfig.simRate); // 600초
     const c = w.counts();
     expect(w.gameOver).toBe(false);
     expect(c.photosynth).toBeGreaterThan(0);
-    expect(c.photosynth).toBeLessThan(400); // 수용력 근처에서 평형 — 무한 폭주 없음
+    expect(c.photosynth).toBeLessThan(400); // 대기 공급 한도 근처에서 평형 — 무한 폭주 없음
+  });
+
+  it('수명이 아니라 에너지 고갈로만 사망한다', () => {
+    // 자원이 충분하면 오래 살아남는 광합성 개체가 존재(수명 만료로 죽지 않음)
+    const w = runWorld(777, 400 * environmentConfig.simRate);
+    expect(w.counts().photosynth).toBeGreaterThan(0);
+    // 에너지가 음수인 세포는 존재하지 않는다(사망 처리됨)
+    for (const cell of w.cells) expect(cell.energy).toBeGreaterThan(0);
   });
 });
 
