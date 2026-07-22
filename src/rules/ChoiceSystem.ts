@@ -5,17 +5,14 @@ import { applyEffects } from './EffectExecutor';
 import { contextFromWorld, evaluateAll, evaluateCondition, type EvalContext } from './ConditionEvaluator';
 
 /**
- * 선택지 시스템.
+ * 선택지(진화) 시스템.
  * - 완전 무작위가 아니라 "상황 가중치"로 후보를 뽑는다:
- *   위기(예: 산소 부족)일 때 대응 선택지의 등장 확률이 올라간다
+ *   위기(예: 산소 부족)일 때 대응 돌연변이의 등장 확률이 올라간다
  *   -> 플레이어가 자기 결정으로 대응했다는 감각을 강화.
+ * - 적용 시 종 전체를 즉시 바꾸지 않고, 해당 종의 유전자풀에 돌연변이를 넣는다.
  */
 export class ChoiceSystem {
-  constructor(
-    private world: World,
-    /** 선택지 등장 주기(초). 조절 가능한 핵심 페이싱 값. */
-    public interval = 18,
-  ) {}
+  constructor(private world: World) {}
 
   private computeWeight(ctx: EvalContext, def: ChoiceDef): number {
     let w = def.baseWeight;
@@ -46,7 +43,7 @@ export class ChoiceSystem {
     return picks;
   }
 
-  /** 선택 적용 */
+  /** 선택 적용 (유전자풀에 돌연변이 등록) */
   apply(choiceId: string): boolean {
     const def = choiceDefs.find((d) => d.id === choiceId);
     if (!def) return false;

@@ -6,6 +6,7 @@ export interface EvalContext {
   resources: Record<ResourceKey, number>;
   counts: Record<SpeciesId, number>;
   totalCells: number;
+  corpses: number;
   time: number;
 }
 
@@ -15,6 +16,7 @@ export function contextFromWorld(world: World): EvalContext {
     resources: world.env.resources,
     counts,
     totalCells: world.cells.length,
+    corpses: world.corpses.length,
     time: world.time,
   };
 }
@@ -34,6 +36,7 @@ export function evaluateCondition(ctx: EvalContext, cond: Condition): boolean {
     case 'resource': return compare(ctx.resources[cond.key], cond.cmp, cond.value);
     case 'count': return compare(ctx.counts[cond.species], cond.cmp, cond.value);
     case 'totalCells': return compare(ctx.totalCells, cond.cmp, cond.value);
+    case 'corpses': return compare(ctx.corpses, cond.cmp, cond.value);
     case 'time': return compare(ctx.time, cond.cmp, cond.value);
   }
 }

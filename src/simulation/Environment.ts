@@ -10,7 +10,7 @@ export class Environment {
 
   constructor(private cfg: EnvironmentConfig) {
     this.resources = { ...(cfg.initialResources as Resources) };
-    this.regen = { oxygen: 0, co2: 0, organic: 0, heat: 0, toxicity: 0 };
+    this.regen = { oxygen: 0, co2: 0, heat: 0, toxicity: 0 };
   }
 
   update(dt: number): void {

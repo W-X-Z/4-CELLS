@@ -1,4 +1,5 @@
 import { dist2 } from '../../core/math';
+import { eff } from '../genetics';
 import type { World } from '../World';
 
 const neighbors: number[] = [];
@@ -14,8 +15,9 @@ export function runInteraction(world: World, _dt: number): void {
     if (!c.alive) continue;
     const def = world.species[c.species];
     if (def.moveMode !== 'seekPrey' || def.preyOn.length === 0) continue;
+    const maxE = eff(def, c, 'maxEnergy');
     // 배부르면 사냥하지 않음 -> 먹이 개체군이 전멸까지 사냥당하는 것을 완화
-    if (c.energy >= def.maxEnergy * 0.7) continue;
+    if (c.energy >= maxE * 0.7) continue;
 
     const reach = def.radius + 8;
     world.spatial.query(c.x, c.y, reach, neighbors);
@@ -30,7 +32,7 @@ export function runInteraction(world: World, _dt: number): void {
       if (dist2(c.x, c.y, prey.x, prey.y) <= rSum * rSum) {
         // 포식 성공: 먹이 사망 예약(사체는 Death에서 환원)
         prey.alive = false;
-        c.energy = Math.min(def.maxEnergy, c.energy + def.attackEnergy);
+        c.energy = Math.min(maxE, c.energy + eff(def, c, 'attackEnergy'));
         c.flash = 1;
         world.pushEvent({ type: 'predation', x: prey.x, y: prey.y });
         break; // 틱당 1마리만

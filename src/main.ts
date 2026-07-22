@@ -78,7 +78,7 @@ async function bootstrap(): Promise<void> {
         game.togglePause();
         hud.setPaused(true);
       }
-      infoModal.show(id, game.world, game.appliedChoices);
+      infoModal.show(id, game.world);
     },
   });
 

@@ -1,40 +1,15 @@
-import type { ResourceKey, SpeciesId } from '../simulation/types';
+import type { GeneField, ResourceKey, SpeciesId } from '../simulation/types';
 
 /**
  * 원자적 Effect 어휘.
- * 모든 선택지는 개별 코드 시나리오가 아니라 이 Effect들의 조합(JSON)으로 표현된다.
- * 새로운 표현이 필요하면 여기에 kind를 추가하고 EffectExecutor에 처리기를 더한다.
+ * 모든 진화 선택지는 개별 코드 시나리오가 아니라 이 Effect의 조합(JSON)으로 표현된다.
+ *
+ * 핵심: 선택은 종 전체를 즉시 바꾸지 않는다. 해당 종의 "유전자풀"에 돌연변이를 넣어,
+ * 이후 태어나는 개체 일부(rate=등장률)가 형질을 발현하고 자손에게 유전시킨다.
  */
-export type Op = 'add' | 'mul' | 'set';
-
 export type Effect =
-  // 환경 자원 풀 즉시 변경
-  | { kind: 'resource'; op: Op; key: ResourceKey; value: number }
-  // 환경 자원의 초당 자연 회복(baseline) 변경 — 예: 태양광 세기 조절
-  | { kind: 'resourceRegen'; op: Op; key: ResourceKey; value: number }
-  // 종의 수치 능력치 변경 (moveSpeed, divideEnergy, attackEnergy, upkeep 등)
-  | { kind: 'species'; op: Op; species: SpeciesId; field: SpeciesNumericField; value: number }
-  // 종의 대사 자원 계수 변경 (intake/output)
-  | { kind: 'metabolism'; op: Op; species: SpeciesId; io: 'intake' | 'output'; key: ResourceKey; value: number }
-  // 이동 방식(행동 규칙) 변경
-  | { kind: 'moveMode'; species: SpeciesId; value: 'drift' | 'seekResource' | 'seekPrey' }
-  // 포식 관계(행동 규칙) 추가/제거
-  | { kind: 'predation'; op: 'add' | 'remove'; species: SpeciesId; target: SpeciesId }
-  // 신규 세포 투입
-  | { kind: 'spawn'; species: SpeciesId; count: number };
-
-/** species Effect가 변경 가능한 숫자 필드 화이트리스트 */
-export type SpeciesNumericField =
-  | 'moveSpeed'
-  | 'radius'
-  | 'energyFromIntake'
-  | 'upkeep'
-  | 'attackEnergy'
-  | 'divideEnergy'
-  | 'divideCooldown'
-  | 'maxEnergy'
-  | 'lifespan'
-  | 'toxicityTolerance';
+  // 종의 유전자풀에 돌연변이 추가 — field 배율 value, 신생아 발현 확률 rate
+  { kind: 'mutation'; species: SpeciesId; field: GeneField; value: number; rate: number };
 
 /** 조건 어휘 — 선택지 등장 가능 여부 및 상황 가중치 부스트에 사용 */
 export type Cmp = 'lt' | 'lte' | 'gt' | 'gte';
@@ -44,14 +19,11 @@ export type Condition =
   | { kind: 'resource'; key: ResourceKey; cmp: Cmp; value: number }
   | { kind: 'count'; species: SpeciesId; cmp: Cmp; value: number }
   | { kind: 'totalCells'; cmp: Cmp; value: number }
+  | { kind: 'corpses'; cmp: Cmp; value: number }
   | { kind: 'time'; cmp: Cmp; value: number };
 
-export type ChoiceCategory =
-  | 'environment' // 환경 수치 변경
-  | 'ability' // 세포 능력치 변경
-  | 'behavior' // 행동 규칙 추가/제거
-  | 'metabolism' // 자원 생산/소비 관계 변경
-  | 'spawn'; // 신규 세포/오브젝트 생성
+/** 선택지 분류 — 어떤 종의 유전자를 건드리는지로 구분(UI 색/글리프에 사용) */
+export type ChoiceCategory = SpeciesId;
 
 export interface ChoiceDef {
   id: string;

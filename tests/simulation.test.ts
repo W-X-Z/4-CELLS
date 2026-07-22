@@ -49,19 +49,49 @@ describe('시뮬레이션 건전성', () => {
   });
 });
 
-describe('선택지 Effect', () => {
-  it('spawn 선택지는 해당 종 개체수를 늘린다', () => {
+describe('시체(Corpse) 시스템', () => {
+  it('세포가 죽으면 시체가 생기고, 유기물은 전역 자원이 아니다', () => {
+    const w = runWorld(2024, 300);
+    // 자원 키에 organic이 없다
+    expect((RESOURCE_KEYS as readonly string[]).includes('organic')).toBe(false);
+    // 300틱(20초)이면 사망이 발생해 시체가 존재
+    expect(w.corpses.length).toBeGreaterThan(0);
+    for (const co of w.corpses) expect(co.mass).toBeGreaterThan(0);
+  });
+});
+
+describe('돌연변이(유전자풀) 선택지', () => {
+  it('돌연변이 선택지는 유전자풀에 등록되고, 이후 태어난 개체 일부가 발현한다', () => {
     const game = new Game({ seed: 5, autoChoice: () => null });
-    const before = game.world.counts().decomposer;
-    game.choices.apply('sp_decomposer_seed'); // 분해 세포 24 투입
-    const after = game.world.counts().decomposer;
-    expect(after).toBe(before + 24);
+    game.choices.apply('photo_chloroplast'); // 광합성 효율 돌연변이 등장률 50%
+    expect(game.world.genePool.photosynth.length).toBe(1);
+    const mutId = game.world.genePool.photosynth[0].id;
+
+    // 여러 세대 진행 -> 신생아가 돌연변이를 발현(carried)해야 한다
+    for (let i = 0; i < 400; i++) game.world.step(game.stepDt);
+    const carriers = game.world.cells.filter(
+      (c) => c.species === 'photosynth' && c.carried?.includes(mutId),
+    );
+    expect(carriers.length).toBeGreaterThan(0);
   });
 
-  it('상황 가중치: 산소 위기에서 산소 관련 선택지가 후보에 들어온다', () => {
+  it('상황 가중치: 산소 위기에서 대응 돌연변이가 후보에 들어온다', () => {
     const game = new Game({ seed: 5, autoChoice: () => null });
     game.world.env.resources.oxygen = 100; // 위기 상황 조성
     const choices = game.choices.generate(3);
     expect(choices.length).toBeGreaterThan(0);
+  });
+});
+
+describe('진화 트리거(분열 기반)', () => {
+  it('분열이 누적되면 선택지가 제시된다(시간이 아니라 분열 수)', () => {
+    let offered = 0;
+    // autoChoice를 주지 않아야 UI 경로(onChoicesReady)로 제시된다
+    const game = new Game({ seed: 5, divisionsPerChoice: 20 });
+    game.onChoicesReady = () => { offered++; };
+    // advance를 여러 번 호출해 분열이 쌓이도록
+    for (let i = 0; i < 400 && offered === 0; i++) game.advance(1000 / environmentConfig.simRate);
+    expect(game.world.divisions).toBeGreaterThanOrEqual(20);
+    expect(offered).toBeGreaterThan(0);
   });
 });

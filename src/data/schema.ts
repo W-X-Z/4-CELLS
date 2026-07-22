@@ -5,6 +5,11 @@ const resourceKey = z.enum(RESOURCE_KEYS);
 const speciesId = z.enum(['photosynth', 'consumer', 'predator', 'decomposer']);
 const partialResources = z.record(resourceKey, z.number()).default({});
 
+const geneField = z.enum([
+  'moveSpeed', 'vision', 'energyFromIntake', 'upkeep', 'attackEnergy',
+  'divideEnergy', 'maxEnergy', 'lifespan', 'toxicityTolerance', 'energyFromCorpse',
+]);
+
 export const speciesSchema = z.object({
   id: speciesId,
   name: z.string(),
@@ -20,6 +25,8 @@ export const speciesSchema = z.object({
   scavenge: partialResources,
   energyFromScavenge: z.number().nonnegative().default(0),
   upkeep: z.number().nonnegative(),
+  corpseAppetite: z.number().nonnegative().default(0),
+  energyFromCorpse: z.number().nonnegative().default(0),
   preyOn: z.array(speciesId).default([]),
   attackEnergy: z.number().nonnegative(),
   divideEnergy: z.number().positive(),
@@ -45,47 +52,38 @@ export const environmentSchema = z.object({
   respirationRate: z.number(),
   respirationCo2Ratio: z.number(),
   suffocationPenalty: z.number(),
+  // 시체 시스템
+  initialCorpses: z.number().nonnegative().default(0),
+  corpseRotRate: z.number().nonnegative().default(0),
+  // 진화 페이싱: 누적 분열 수가 이만큼 늘 때마다 선택지 제시
+  divisionsPerChoice: z.number().positive().default(30),
   initialCounts: z.record(speciesId, z.number()),
 });
 
 const cmp = z.enum(['lt', 'lte', 'gt', 'gte']);
-const op = z.enum(['add', 'mul', 'set']);
 
 const conditionSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('always') }),
   z.object({ kind: z.literal('resource'), key: resourceKey, cmp, value: z.number() }),
   z.object({ kind: z.literal('count'), species: speciesId, cmp, value: z.number() }),
   z.object({ kind: z.literal('totalCells'), cmp, value: z.number() }),
+  z.object({ kind: z.literal('corpses'), cmp, value: z.number() }),
   z.object({ kind: z.literal('time'), cmp, value: z.number() }),
 ]);
 
-const effectSchema = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('resource'), op, key: resourceKey, value: z.number() }),
-  z.object({ kind: z.literal('resourceRegen'), op, key: resourceKey, value: z.number() }),
-  z.object({
-    kind: z.literal('species'),
-    op,
-    species: speciesId,
-    field: z.enum([
-      'moveSpeed', 'radius', 'energyFromIntake', 'upkeep', 'attackEnergy',
-      'divideEnergy', 'divideCooldown', 'maxEnergy', 'lifespan', 'toxicityTolerance',
-    ]),
-    value: z.number(),
-  }),
-  z.object({
-    kind: z.literal('metabolism'), op, species: speciesId,
-    io: z.enum(['intake', 'output']), key: resourceKey, value: z.number(),
-  }),
-  z.object({ kind: z.literal('moveMode'), species: speciesId, value: z.enum(['drift', 'seekResource', 'seekPrey']) }),
-  z.object({ kind: z.literal('predation'), op: z.enum(['add', 'remove']), species: speciesId, target: speciesId }),
-  z.object({ kind: z.literal('spawn'), species: speciesId, count: z.number().int() }),
-]);
+const effectSchema = z.object({
+  kind: z.literal('mutation'),
+  species: speciesId,
+  field: geneField,
+  value: z.number().positive(),
+  rate: z.number().min(0).max(1),
+});
 
 export const choiceSchema = z.object({
   id: z.string(),
   title: z.string(),
   description: z.string(),
-  category: z.enum(['environment', 'ability', 'behavior', 'metabolism', 'spawn']),
+  category: speciesId,
   effects: z.array(effectSchema).min(1),
   baseWeight: z.number().positive(),
   requires: z.array(conditionSchema).optional(),

@@ -15,12 +15,17 @@ export interface EnvironmentConfig {
   respirationRate: number; // upkeep 1당 초당 O₂ 소비량
   respirationCo2Ratio: number; // 소비한 O₂ 대비 배출 CO₂ 비율
   suffocationPenalty: number; // O₂ 부족 시 부족분에 비례해 추가로 잃는 에너지 배수(질식)
+  // 시체 시스템
+  initialCorpses: number; // 시작 시 흩뿌리는 잔해(분해자 부트스트랩용)
+  corpseRotRate: number; // 초당 부패로 사라지는 시체 질량(방치 시 독성 방출)
+  // 진화 페이싱
+  divisionsPerChoice: number; // 누적 분열 수가 이만큼 늘 때마다 진화 선택지 제시
   initialCounts: Record<SpeciesId, number>;
 }
 
 /**
  * 초기 환경/월드 설정.
- * 자원은 전역 풀(global pool) 방식 — MVP 밸런싱과 헤드리스 테스트를 단순하게 유지.
+ * 자원은 전역 풀(oxygen·co2·heat·toxicity)이고, 유기물은 시체 엔티티로 분리 관리한다.
  */
 export const environmentConfig: EnvironmentConfig = environmentSchema.parse({
   width: 1200,
@@ -31,7 +36,6 @@ export const environmentConfig: EnvironmentConfig = environmentSchema.parse({
   initialResources: {
     oxygen: 500,
     co2: 520,
-    organic: 340,
     heat: 250,
     toxicity: 20,
   },
@@ -39,7 +43,6 @@ export const environmentConfig: EnvironmentConfig = environmentSchema.parse({
   displayCaps: {
     oxygen: 1200,
     co2: 1200,
-    organic: 1000,
     heat: 1000,
     toxicity: 800,
   },
@@ -48,8 +51,13 @@ export const environmentConfig: EnvironmentConfig = environmentSchema.parse({
   heatDissipation: 0.05,
   toxicityDecay: 2,
   respirationRate: 0.9,
-  respirationCo2Ratio: 0.5, // O₂ 소비 대비 CO₂ 환원을 낮게 — CO₂를 광합성의 제한 요소로 유지
+  respirationCo2Ratio: 0.6, // O₂ 소비 대비 CO₂ 환원 — CO₂를 광합성의 제한 요소로 유지하되 급붕괴 방지
   suffocationPenalty: 2.2,
+
+  initialCorpses: 60, // 시작 잔해: 분해/소비 세포가 초반에 굶지 않도록
+  corpseRotRate: 0.3, // 방치된 시체가 서서히 부패하며 독성을 방출(느릴수록 분해자가 찾을 시간이 늘어남)
+
+  divisionsPerChoice: 100, // 분열을 많이 할수록(번성할수록) 더 자주 진화
 
   initialCounts: {
     photosynth: 66,

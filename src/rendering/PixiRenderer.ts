@@ -11,10 +11,13 @@ import {
 } from 'pixi.js';
 import type { World } from '../simulation/World';
 import { speciesDefs } from '../data/species';
+import { corpseRadius } from '../simulation/systems/Scavenging';
 import type { QualityProfile } from '../core/device';
 import type { SpeciesDef } from '../simulation/types';
 
 const TEX_RADIUS = 16; // 텍스처 기준 반경(스프라이트에서 축소)
+const CORPSE_TINT = 0x6b5a45; // 시체(유기물) 색
+const HALO_TINT = 0xffffff; // 돌연변이 개체 강조 링
 
 /**
  * PixiJS 렌더러. 시뮬레이션 상태를 읽어 스프라이트로 그리기만 한다(단방향).
@@ -34,10 +37,16 @@ export class PixiRenderer {
   private quality!: QualityProfile;
 
   private root = new Container();
+  private corpseLayer = new Container(); // 시체 (세포 아래)
+  private haloLayer = new Container(); // 돌연변이 강조 링 (세포 아래, 시체 위)
   private cellLayer = new Container();
   private fxLayer = new Container(); // 플로팅 텍스트 이펙트 (세포 위)
   private textures: Record<string, Texture> = {};
+  private corpseTex!: Texture;
+  private haloTex!: Texture;
   private pool: Sprite[] = [];
+  private corpsePool: Sprite[] = [];
+  private haloPool: Sprite[] = [];
 
   // ── 플로팅 텍스트 (포식/광합성 등 순간 이벤트 시각화) ──
   private fxPool: Text[] = [];
@@ -57,6 +66,8 @@ export class PixiRenderer {
     window.addEventListener('resize', this.resizeHandler);
 
     this.stage.addChild(this.root);
+    this.root.addChild(this.corpseLayer);
+    this.root.addChild(this.haloLayer);
     this.root.addChild(this.cellLayer);
     this.root.addChild(this.fxLayer);
     this.fxCap = quality.isMobile ? 16 : 40;
@@ -112,6 +123,16 @@ export class PixiRenderer {
       this.textures[def.id] = this.renderer.generateTexture({ target: g, resolution: 2 });
       g.destroy();
     }
+    // 시체: 부드러운 원형
+    const cg = new Graphics();
+    cg.circle(0, 0, TEX_RADIUS).fill(0xffffff);
+    this.corpseTex = this.renderer.generateTexture({ target: cg, resolution: 2 });
+    cg.destroy();
+    // 돌연변이 강조: 얇은 링
+    const hg = new Graphics();
+    hg.circle(0, 0, TEX_RADIUS * 0.82).stroke({ width: TEX_RADIUS * 0.22, color: 0xffffff, alignment: 0.5 });
+    this.haloTex = this.renderer.generateTexture({ target: hg, resolution: 2 });
+    hg.destroy();
   }
 
   /** 월드 좌표계를 캔버스에 레터박스로 맞춤 */
@@ -216,9 +237,32 @@ export class PixiRenderer {
     }
     this.updateFloatTexts(dt);
 
+    // ── 시체 ──
+    const corpses = this.world.corpses;
+    const cn = Math.min(corpses.length, this.quality.maxCells);
+    for (let i = 0; i < cn; i++) {
+      const co = corpses[i];
+      let sp = this.corpsePool[i];
+      if (!sp) {
+        sp = new Sprite(this.corpseTex);
+        sp.anchor.set(0.5);
+        this.corpseLayer.addChild(sp);
+        this.corpsePool[i] = sp;
+      }
+      sp.visible = true;
+      sp.tint = CORPSE_TINT;
+      sp.x = co.x;
+      sp.y = co.y;
+      sp.scale.set((corpseRadius(co.mass) / TEX_RADIUS) * (1 + co.flash * 0.4));
+      sp.alpha = 0.5 + Math.min(0.35, co.mass * 0.03);
+    }
+    for (let i = cn; i < this.corpsePool.length; i++) this.corpsePool[i].visible = false;
+
+    // ── 세포 + 돌연변이 강조 링 ──
     const cells = this.world.cells;
     const n = Math.min(cells.length, this.quality.maxCells);
 
+    let haloCount = 0;
     for (let i = 0; i < n; i++) {
       const c = cells[i];
       const def = this.world.species[c.species] as SpeciesDef;
@@ -240,8 +284,27 @@ export class PixiRenderer {
       // 에너지가 낮으면 흐리게(굶주림 시각화)
       const vitality = Math.max(0.25, Math.min(1, c.energy / (def.maxEnergy * 0.6)));
       sp.alpha = 0.55 + vitality * 0.45 + flash * 0.4;
+
+      // 돌연변이 보유 개체는 얇은 링으로 강조
+      if (c.carried && c.carried.length > 0) {
+        let halo = this.haloPool[haloCount];
+        if (!halo) {
+          halo = new Sprite(this.haloTex);
+          halo.anchor.set(0.5);
+          this.haloLayer.addChild(halo);
+          this.haloPool[haloCount] = halo;
+        }
+        halo.visible = true;
+        halo.tint = HALO_TINT;
+        halo.x = c.x;
+        halo.y = c.y;
+        halo.scale.set((def.radius * 1.7) / TEX_RADIUS);
+        halo.alpha = 0.35;
+        haloCount++;
+      }
     }
     for (let i = n; i < this.pool.length; i++) this.pool[i].visible = false;
+    for (let i = haloCount; i < this.haloPool.length; i++) this.haloPool[i].visible = false;
   }
 
   destroy(): void {
