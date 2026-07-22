@@ -12,6 +12,7 @@ import {
 import type { World } from '../simulation/World';
 import { speciesDefs } from '../data/species';
 import { corpseRadius } from '../simulation/systems/Scavenging';
+import { clamp } from '../core/math';
 import type { QualityProfile } from '../core/device';
 import type { SpeciesDef } from '../simulation/types';
 
@@ -56,6 +57,11 @@ export class PixiRenderer {
   private photoAccum = 0; // 광합성 표시 샘플링 타이머
   private frame = 0;
 
+  // ── 카메라(팬/줌) ──
+  private camZoom = 1; // 1 = 월드 전체가 화면에 맞는 기본 배율. 최대 6배까지 확대.
+  private camPanX = 0; // 화면 px 단위 팬 오프셋
+  private camPanY = 0;
+
   async init(canvas: HTMLCanvasElement, world: World, quality: QualityProfile): Promise<void> {
     this.world = world;
     this.quality = quality;
@@ -64,6 +70,7 @@ export class PixiRenderer {
 
     this.resizeHandler();
     window.addEventListener('resize', this.resizeHandler);
+    this.setupCamera(this.resizeTarget);
 
     this.stage.addChild(this.root);
     this.root.addChild(this.corpseLayer);
@@ -135,17 +142,97 @@ export class PixiRenderer {
     hg.destroy();
   }
 
-  /** 월드 좌표계를 캔버스에 레터박스로 맞춤 */
+  /** 월드 좌표계를 캔버스에 맞추고 카메라(줌/팬)를 반영 */
   private fit(): void {
     const { width, height } = this.world.cfg;
     // screen은 항상 논리(화면) px. renderer.width도 v8에선 논리 px라 resolution으로 나누면 안 됨.
     const sw = this.renderer.screen.width;
     const sh = this.renderer.screen.height;
-    const scale = Math.min(sw / width, sh / height);
-    this.worldScale = scale || 1;
+    const baseScale = Math.min(sw / width, sh / height) || 1; // 월드 전체가 보이는 기본 배율
+    const scale = baseScale * this.camZoom;
+    this.worldScale = scale;
+    // 팬 클램프: 줌인 상태에서 월드가 화면 밖으로 완전히 빠져나가지 않도록
+    const allowedX = Math.max(0, (width * scale - sw) / 2);
+    const allowedY = Math.max(0, (height * scale - sh) / 2);
+    this.camPanX = clamp(this.camPanX, -allowedX, allowedX);
+    this.camPanY = clamp(this.camPanY, -allowedY, allowedY);
     this.root.scale.set(scale);
-    this.root.x = (sw - width * scale) / 2;
-    this.root.y = (sh - height * scale) / 2;
+    this.root.x = (sw - width * scale) / 2 + this.camPanX;
+    this.root.y = (sh - height * scale) / 2 + this.camPanY;
+  }
+
+  /** 팬/줌 입력 설정 (휠 줌·드래그 팬·핀치 줌·더블클릭 리셋) */
+  private setupCamera(target: HTMLElement): void {
+    const pointers = new Map<number, { x: number; y: number }>();
+    let lastPinchDist = 0;
+
+    target.addEventListener(
+      'wheel',
+      (e) => {
+        e.preventDefault();
+        this.zoomAt(e.clientX, e.clientY, Math.exp(-e.deltaY * 0.0015));
+      },
+      { passive: false },
+    );
+
+    target.addEventListener('pointerdown', (e) => {
+      target.setPointerCapture(e.pointerId);
+      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    });
+    target.addEventListener('pointermove', (e) => {
+      const p = pointers.get(e.pointerId);
+      if (!p) return;
+      const dx = e.clientX - p.x;
+      const dy = e.clientY - p.y;
+      p.x = e.clientX;
+      p.y = e.clientY;
+      if (pointers.size === 1) {
+        // 드래그 팬
+        this.camPanX += dx;
+        this.camPanY += dy;
+      } else if (pointers.size === 2) {
+        // 핀치 줌 (두 손가락 거리 변화)
+        const pts = [...pointers.values()];
+        const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+        const midX = (pts[0].x + pts[1].x) / 2;
+        const midY = (pts[0].y + pts[1].y) / 2;
+        if (lastPinchDist > 0 && dist > 0) this.zoomAt(midX, midY, dist / lastPinchDist);
+        lastPinchDist = dist;
+      }
+    });
+    const release = (e: PointerEvent): void => {
+      pointers.delete(e.pointerId);
+      if (pointers.size < 2) lastPinchDist = 0;
+    };
+    target.addEventListener('pointerup', release);
+    target.addEventListener('pointercancel', release);
+    // 더블클릭/더블탭 → 뷰 리셋
+    target.addEventListener('dblclick', () => {
+      this.camZoom = 1;
+      this.camPanX = 0;
+      this.camPanY = 0;
+    });
+  }
+
+  /** (clientX, clientY) 아래의 월드 좌표를 고정한 채 factor배 확대/축소 */
+  private zoomAt(clientX: number, clientY: number, factor: number): void {
+    const rect = this.resizeTarget.getBoundingClientRect();
+    const cx = clientX - rect.left;
+    const cy = clientY - rect.top;
+    const newZoom = clamp(this.camZoom * factor, 1, 6);
+    if (newZoom === this.camZoom) return;
+    // 현재 변환 기준으로 커서 아래 월드 좌표
+    const wx = (cx - this.root.x) / this.worldScale;
+    const wy = (cy - this.root.y) / this.worldScale;
+    const baseScale = this.worldScale / this.camZoom;
+    const newScale = baseScale * newZoom;
+    const { width, height } = this.world.cfg;
+    const sw = this.renderer.screen.width;
+    const sh = this.renderer.screen.height;
+    // 커서 위치가 유지되도록 팬 재계산
+    this.camPanX = cx - wx * newScale - (sw - width * newScale) / 2;
+    this.camPanY = cy - wy * newScale - (sh - height * newScale) / 2;
+    this.camZoom = newZoom;
   }
 
   /** 월드 좌표 (x,y)에서 위로 떠오르며 사라지는 텍스트를 생성 */

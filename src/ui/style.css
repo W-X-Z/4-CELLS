@@ -22,9 +22,24 @@ html, body {
   touch-action: none;
 }
 
-#app { position: fixed; inset: 0; }
-#stage { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-#ui-root { position: absolute; inset: 0; pointer-events: none; }
+/* 상단바 · 캔버스 · 하단바를 세로로 분리 (캔버스만 팬/줌 대상) */
+#app { position: fixed; inset: 0; display: flex; flex-direction: column; }
+#hud-top {
+  flex: none; position: relative; z-index: 5;
+  background: linear-gradient(180deg, rgba(10,15,26,0.96), rgba(10,15,26,0.86));
+  padding-top: env(safe-area-inset-top);
+  border-bottom: 1px solid var(--line);
+}
+#stage-wrap { position: relative; flex: 1 1 auto; min-height: 0; overflow: hidden; touch-action: none; }
+#stage { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+#hud-bottom {
+  flex: none; position: relative; z-index: 5;
+  background: linear-gradient(0deg, rgba(10,15,26,0.96), rgba(10,15,26,0.86));
+  padding-bottom: env(safe-area-inset-bottom);
+  border-top: 1px solid var(--line);
+}
+/* 오버레이(모달·선택지·게임오버·토스트) 전용 레이어 — 평소엔 클릭이 통과 */
+#ui-root { position: absolute; inset: 0; pointer-events: none; z-index: 20; }
 #ui-root button { pointer-events: auto; }
 
 .startup-status {
@@ -49,32 +64,29 @@ html, body {
 
 /* ── 상단 바: 시간 + 배속 ── */
 .hud-top {
-  position: absolute; top: 0; left: 0; right: 0;
   display: flex; align-items: center; justify-content: space-between;
   padding: 8px 12px;
-  padding-top: calc(8px + env(safe-area-inset-top));
-  background: linear-gradient(180deg, rgba(10,15,26,0.92), rgba(10,15,26,0));
 }
 .hud-time { font-size: 15px; color: var(--muted); }
 .hud-time b { color: var(--text); font-size: 17px; font-variant-numeric: tabular-nums; }
 .controls { display: flex; gap: 6px; }
 
-/* ── 환경 자원 카드 (숫자만) ── */
+/* ── 환경 자원 카드 (탭 → 도움말) ── */
 .res-cards {
-  position: absolute; top: 58px; left: 0; right: 0;
-  display: flex; gap: 6px; padding: 0 10px;
+  display: flex; gap: 6px; padding: 0 10px 8px;
   overflow-x: auto; scrollbar-width: none;
-  pointer-events: auto; touch-action: pan-x;
+  touch-action: pan-x;
 }
 .res-cards::-webkit-scrollbar { display: none; }
 .res-card {
   flex: 1 0 auto; min-width: 74px;
-  background: var(--panel); backdrop-filter: blur(6px);
+  background: var(--panel);
   border: 1px solid var(--line); border-radius: 10px;
-  padding: 5px 9px;
+  padding: 5px 9px; text-align: left; cursor: pointer; color: var(--text); font: inherit;
   display: flex; flex-direction: column; gap: 1px;
   transition: border-color 0.3s;
 }
+.res-card:hover { border-color: var(--accent); }
 .res-card.danger { border-color: var(--danger); animation: danger-pulse 1.2s ease-in-out infinite; }
 @keyframes danger-pulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); }
@@ -87,19 +99,17 @@ html, body {
 .res-card-delta.up { color: #4ade80; }
 .res-card-delta.down { color: #f87171; }
 
-/* ── 하단 세포 바 ── */
+/* ── 하단 세포 바 (동일 너비 그리드) ── */
 .sp-bar {
-  position: absolute; bottom: 0; left: 0; right: 0;
-  display: flex; justify-content: center; gap: 8px; flex-wrap: wrap;
-  padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
-  background: linear-gradient(0deg, rgba(10,15,26,0.92), rgba(10,15,26,0));
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+  padding: 10px;
 }
 .sp-chip {
-  display: flex; align-items: center; gap: 7px;
-  background: var(--panel); backdrop-filter: blur(6px);
-  border: 1px solid var(--line); border-radius: 999px;
-  padding: 8px 14px; cursor: pointer; color: var(--text);
-  font-size: 13px; min-height: 40px;
+  display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%;
+  background: var(--panel);
+  border: 1px solid var(--line); border-radius: 12px;
+  padding: 9px 10px; cursor: pointer; color: var(--text);
+  font-size: 13px; min-height: 42px;
   transition: border-color 0.15s, transform 0.12s;
 }
 .sp-chip:hover { border-color: var(--accent); transform: translateY(-2px); }
@@ -117,10 +127,16 @@ html, body {
 .modal-overlay.hidden { display: none; }
 .modal-card {
   background: var(--panel-solid); border: 1px solid var(--line); border-radius: 16px;
-  padding: 18px 20px; width: 100%; max-width: 420px;
-  max-height: 82vh; overflow-y: auto; touch-action: pan-y;
+  padding: 0 20px 18px; width: 100%; max-width: 400px;
+  max-height: 68vh; overflow-y: auto; touch-action: pan-y;
 }
-.modal-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+/* 닫기 버튼이 스크롤 중에도 항상 보이도록 헤더를 상단 고정 */
+.modal-head {
+  position: sticky; top: 0; z-index: 2;
+  display: flex; align-items: center; gap: 10px;
+  margin: 0 -20px 10px; padding: 14px 20px 10px;
+  background: var(--panel-solid); border-bottom: 1px solid var(--line);
+}
 .modal-glyph { font-size: 22px; line-height: 1; }
 .modal-title { font-size: 19px; font-weight: 800; flex: 1; }
 .modal-close { min-width: 36px; min-height: 36px; padding: 4px 10px; }
@@ -201,12 +217,13 @@ html, body {
 
 /* ── 모바일/세로 ── */
 @media (max-width: 720px) {
-  .res-cards { top: 54px; }
   .res-card { min-width: 66px; padding: 4px 8px; }
   .res-card-val { font-size: 14px; }
-  .sp-chip { padding: 7px 11px; font-size: 12px; }
+  /* 하단 세포 바: 2×2 배치, 버튼 동일 너비 */
+  .sp-bar { grid-template-columns: repeat(2, 1fr); }
+  .sp-chip { padding: 9px 8px; font-size: 12px; }
   .sp-chip-name { display: inline; }
   .choice-card { width: 88vw; min-height: auto; }
   .choice-grid { gap: 10px; }
-  .feedback-layer { bottom: 66px; right: 10px; }
+  .feedback-layer { bottom: 12px; right: 10px; }
 }
