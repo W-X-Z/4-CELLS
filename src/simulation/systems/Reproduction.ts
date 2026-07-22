@@ -30,6 +30,9 @@ export function runReproduction(world: World, _dt: number): void {
     const childEnergy = remaining / 2;
     c.energy = childEnergy;
     c.divideTimer = def.divideCooldown;
+    // 분열 직후엔 소화(배부름) 쿨을 부여해 곧바로 먹이를 뜯지 못하게 한다.
+    // (소비 세포가 분열하자마자 광합성 세포를 급속히 절멸시키던 연쇄를 완화)
+    if (def.eatCooldown > 0) c.eatTimer = Math.max(c.eatTimer, def.eatCooldown);
     c.flash = 0.6;
 
     const offset = def.radius * 2;

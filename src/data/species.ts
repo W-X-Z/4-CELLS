@@ -62,8 +62,8 @@ const rawSpecies: SpeciesDef[] = [
     energyFromCorpse: 0,
     preyOn: ['photosynth'],
     attackEnergy: 22, // 포식 1회당 에너지↑ → 번식 여유
-    eatCooldown: 2.0, // 소화 시간(배부름) — 광합성 급속 절멸 방지와 생존 사이의 절충
-    divideEnergy: 40, // 낮춰서 더 쉽게 번식 → 조기 멸종 방지
+    eatCooldown: 3.5, // 소화 시간(배부름)↑ — 분열 직후 광합성 세포를 급속히 뜯어먹지 않도록
+    divideEnergy: 52, // 분열 문턱↑ — 폭발적 증식으로 광합성 세포를 순식간에 절멸시키는 것을 완화
     divideCost: 6,
     divideCooldown: 6,
     maxEnergy: 110,
@@ -92,7 +92,7 @@ const rawSpecies: SpeciesDef[] = [
     energyFromCorpse: 0,
     preyOn: ['consumer'],
     attackEnergy: 24,
-    eatCooldown: 3.5, // 소화가 오래 걸림 → 소비 세포를 과도하게 절멸시키지 않도록
+    eatCooldown: 6.0, // 소화가 오래 걸림 → 소비 세포를 과도하게 사냥해 절멸시키지 않도록(쿨↑)
     divideEnergy: 110, // 소비 세포 과증식을 억제할 만큼은 번식하되 절멸시키진 않는 중간값
     divideCost: 10,
     divideCooldown: 14,

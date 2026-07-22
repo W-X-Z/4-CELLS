@@ -3,8 +3,8 @@ import { RESOURCE_KEYS, RESOURCE_LABELS } from '../simulation/types';
 import { speciesDefs } from '../data/species';
 import type { Speed } from '../game/Game';
 
-/** 환경 대시보드에서 클릭 가능한 항목 (자원 + 시체) */
-export type EnvKey = ResourceKey | 'corpse';
+/** 환경 대시보드에서 클릭 가능한 항목 (자원) */
+export type EnvKey = ResourceKey;
 
 /** 자원별 위험 판정 — 카드 강조용 (밸런스 수치는 choices.ts의 부스트 조건과 맞춤) */
 const DANGER: Partial<Record<ResourceKey, (v: number) => boolean>> = {
@@ -13,9 +13,6 @@ const DANGER: Partial<Record<ResourceKey, (v: number) => boolean>> = {
   heat: (v) => v > 700,
   toxicity: (v) => v > 400,
 };
-
-/** 시체가 너무 쌓이면 부패 독성 위험 */
-const CORPSE_DANGER = 120;
 
 /** 종별 모양 글리프 (색약 대응: 색 + 모양) */
 const SHAPE_GLYPH: Record<string, string> = {
@@ -52,7 +49,6 @@ export class HUD {
   private prev: WorldSnapshot | null = null;
   private timeEl!: HTMLElement;
   private resEls: Record<string, { card: HTMLElement; val: HTMLElement; delta: HTMLElement }> = {};
-  private corpseEls!: { card: HTMLElement; val: HTMLElement };
   private speciesEls: Record<string, { chip: HTMLElement; count: HTMLElement }> = {};
   private speedBtns: HTMLButtonElement[] = [];
   private pauseBtn!: HTMLButtonElement;
@@ -116,11 +112,6 @@ export class HUD {
         delta: card.querySelector('.res-card-delta')!,
       };
     }
-    // 유기물은 전역 수치가 아니라 시체로 관리 — 시체 개수 카드
-    {
-      const card = makeCard('corpse', '사체', false);
-      this.corpseEls = { card, val: card.querySelector('.res-card-val')! };
-    }
     this.top.appendChild(cards);
 
     // ── 하단 세포 바 (탭 → 도움말) ──
@@ -164,9 +155,6 @@ export class HUD {
         el.delta.className = 'res-card-delta ' + (d > 0 ? 'up' : 'down');
       }
     }
-
-    this.corpseEls.val.textContent = String(snap.corpseCount);
-    this.corpseEls.card.classList.toggle('danger', snap.corpseCount > CORPSE_DANGER);
 
     for (const def of speciesDefs) {
       const el = this.speciesEls[def.id];

@@ -118,7 +118,8 @@ export class World {
       vy: this.rng.range(-1, 1) * 4,
       energy,
       divideTimer: this.species[parent.species].divideCooldown,
-      eatTimer: 0,
+      // 신생아도 태어난 직후엔 소화 쿨을 두어 즉시 사냥에 나서지 않게 한다(먹이 급감 완화).
+      eatTimer: this.species[parent.species].eatCooldown,
       feed: 1,
       alive: true,
       flash: 0.6,
