@@ -15,7 +15,9 @@ const WORLD_AREA = 1200 * 750;
  */
 export function computeWorldSize(viewportW: number, viewportH: number): { width: number; height: number } {
   const raw = viewportW > 0 && viewportH > 0 ? viewportW / viewportH : 16 / 9;
-  const aspect = Math.min(2.4, Math.max(0.45, raw)); // 극단적 비율 방지
+  // 캔버스 영역(상/하단 바 제외)은 데스크톱에서 가로로 꽤 넓어질 수 있다.
+  // 상한을 넉넉히 둬 월드가 화면을 가득 채우게 하고(좌우 여백 최소화), 극단만 방지한다.
+  const aspect = Math.min(3.4, Math.max(0.4, raw));
   const width = Math.round(Math.sqrt(WORLD_AREA * aspect));
   const height = Math.round(WORLD_AREA / width);
   return { width, height };

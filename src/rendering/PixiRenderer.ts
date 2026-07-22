@@ -17,7 +17,7 @@ import type { QualityProfile } from '../core/device';
 import type { SpeciesDef } from '../simulation/types';
 
 const TEX_RADIUS = 16; // 텍스처 기준 반경(스프라이트에서 축소)
-const VIEW_PAD = 14; // 캔버스 가장자리 여백(px) — 경계 세포가 반쯤 잘리는 것 방지
+const VIEW_PAD = 8; // 캔버스 가장자리 여백(px) — 경계 세포 잘림 방지에 충분한 최소값(여백 최소화)
 const CORPSE_TINT = 0x6b5a45; // 시체(유기물) 색
 const HALO_TINT = 0xffffff; // 돌연변이 개체 강조 링
 
