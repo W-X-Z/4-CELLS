@@ -21,7 +21,8 @@ export function runReproduction(world: World, _dt: number): void {
     const def = world.species[c.species];
     if (c.divideTimer > 0) continue;
     if (c.feed < MIN_FEED_TO_DIVIDE) continue; // 자원 부족 시 분열 억제(과증식 방지)
-    if (c.energy < eff(def, c, 'divideEnergy')) continue;
+    // 개체 편차(jitter)를 문턱에 곱해 같은 종이라도 분열 시점이 흩어지게 한다(한꺼번에 분열 방지).
+    if (c.energy < eff(def, c, 'divideEnergy') * c.jitter) continue;
 
     // 분열 비용을 먼저 소각(무한 증식 방지) 후 남은 에너지를 자식과 절반씩 나눈다.
     // => 먹이(광합성/포식/분해)로 순수익을 내지 못하면 divideEnergy에 다시 도달하지 못해 분열이 멈춘다.

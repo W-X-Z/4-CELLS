@@ -6,6 +6,8 @@ import { GameOverPanel } from './ui/GameOverPanel';
 import { FeedbackLayer } from './ui/FeedbackLayer';
 import { InfoModal } from './ui/InfoModal';
 import { EnvModal } from './ui/EnvModal';
+import { CellModal } from './ui/CellModal';
+import type { Cell } from './simulation/types';
 import { computeWorldSize, detectQuality } from './core/device';
 import { environmentConfig } from './data/environments';
 import { choiceDefs } from './data/choices';
@@ -79,6 +81,25 @@ async function bootstrap(): Promise<void> {
   const infoModal = new InfoModal(uiRoot, onModalClose);
   const envModal = new EnvModal(uiRoot, onModalClose);
 
+  // 개체 선택: 일시정지 중 캔버스의 세포를 탭하면 상세 모달. 닫으면 강조 링 해제.
+  const cellModal = new CellModal(uiRoot, () => renderer.setSelected(null));
+  const clearSelection = (): void => {
+    cellModal.hide();
+    renderer.setSelected(null);
+  };
+  renderer.onTap = (clientX, clientY) => {
+    // 일시정지 상태에서만 선택(플레이 중 탭은 무시 → 팬/줌 흐름 방해 안 함).
+    if (game.phase !== 'paused') return;
+    const { x, y } = renderer.screenToWorld(clientX, clientY);
+    const cell = pickCell(game.world, x, y);
+    if (cell) {
+      renderer.setSelected(cell);
+      cellModal.show(cell, game.world);
+    } else {
+      clearSelection(); // 빈 곳을 탭하면 선택 해제
+    }
+  };
+
   // 도움말을 열 때: 실행 중이면 멈추고, 닫을 때 재개하도록 표시
   const pauseForModal = (): void => {
     resumeOnModalClose = game.phase === 'running';
@@ -92,7 +113,9 @@ async function bootstrap(): Promise<void> {
     onSpeed: (s: Speed) => game.setSpeed(s),
     onPause: () => {
       game.togglePause();
-      hud.setPaused(game.phase === 'paused');
+      const paused = game.phase === 'paused';
+      hud.setPaused(paused);
+      if (!paused) clearSelection(); // 재개하면 선택 해제
     },
     onSpeciesClick: (id) => {
       if (game.phase === 'choosing' || game.phase === 'gameover') return;
@@ -136,18 +159,21 @@ async function bootstrap(): Promise<void> {
 
   // ── 입력 ──
   window.addEventListener('keydown', (e) => {
-    if (infoModal.visible || envModal.visible) {
+    if (infoModal.visible || envModal.visible || cellModal.visible) {
       if (e.key === 'Escape' || e.key === ' ') {
         e.preventDefault();
         infoModal.hide();
         envModal.hide();
+        cellModal.hide();
       }
       return;
     }
     if (e.key === ' ') {
       e.preventDefault();
       game.togglePause();
-      hud.setPaused(game.phase === 'paused');
+      const paused = game.phase === 'paused';
+      hud.setPaused(paused);
+      if (!paused) clearSelection(); // 재개하면 선택 해제
     } else if (e.key === '1' || e.key === '2' || e.key === '4') {
       const s = Number(e.key) as Speed;
       game.setSpeed(s);
@@ -189,6 +215,23 @@ async function bootstrap(): Promise<void> {
     (window as unknown as { __game: Game; __renderer: PixiRenderer }).__game = game;
     (window as unknown as { __game: Game; __renderer: PixiRenderer }).__renderer = renderer;
   }
+}
+
+/** 월드 좌표 (wx,wy)에서 탭 반경 안에 있는 가장 가까운 세포를 찾는다(없으면 null). */
+function pickCell(world: Game['world'], wx: number, wy: number): Cell | null {
+  let best: Cell | null = null;
+  let bestD = Infinity;
+  for (const c of world.cells) {
+    const dx = c.x - wx;
+    const dy = c.y - wy;
+    const d = dx * dx + dy * dy;
+    const r = world.species[c.species].radius + 8; // 손가락 탭 여유
+    if (d <= r * r && d < bestD) {
+      bestD = d;
+      best = c;
+    }
+  }
+  return best;
 }
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {

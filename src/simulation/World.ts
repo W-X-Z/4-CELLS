@@ -94,11 +94,14 @@ export class World {
       y: clamp(y, 0, this.cfg.height),
       vx: this.rng.range(-1, 1) * 4,
       vy: this.rng.range(-1, 1) * 4,
-      energy,
+      // 초기 세포는 시작 에너지를 개체마다 ±20% 흩뿌려, 처음부터 분열/사망 타이밍이 동기화되지 않게 한다.
+      energy: energy * this.rng.range(0.8, 1.2),
       divideTimer: 0,
       eatTimer: 0,
       feed: 1,
       alive: true,
+      gen: 0,
+      jitter: this.rng.range(0.88, 1.12),
       flash: 0,
     };
     this.cells.push(cell);
@@ -122,6 +125,8 @@ export class World {
       eatTimer: this.species[parent.species].eatCooldown,
       feed: 1,
       alive: true,
+      gen: parent.gen + 1,
+      jitter: this.rng.range(0.88, 1.12), // 개체마다 새로 뽑아 형제도 조금씩 다르게(동기화 완화)
       flash: 0.6,
       genes,
       carried,
