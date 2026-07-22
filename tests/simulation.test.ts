@@ -94,4 +94,13 @@ describe('진화 트리거(분열 기반)', () => {
     expect(game.world.divisions).toBeGreaterThanOrEqual(20);
     expect(offered).toBeGreaterThan(0);
   });
+
+  it('진화 간격이 점진적으로 늘어난다(선형 아님)', () => {
+    const game = new Game({ seed: 5, divisionsPerChoice: 40, divisionsGrowth: 30 });
+    expect(game.divisionsUntilNext()).toBe(40); // 첫 진화
+    game.evolutionCount = 1;
+    expect(game.divisionsUntilNext()).toBe(70); // 두 번째는 +30
+    game.evolutionCount = 2;
+    expect(game.divisionsUntilNext()).toBe(100); // 세 번째는 또 +30
+  });
 });

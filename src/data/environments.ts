@@ -18,8 +18,9 @@ export interface EnvironmentConfig {
   // 시체 시스템
   initialCorpses: number; // 시작 시 흩뿌리는 잔해(분해자 부트스트랩용)
   corpseRotRate: number; // 초당 부패로 사라지는 시체 질량(방치 시 독성 방출)
-  // 진화 페이싱
-  divisionsPerChoice: number; // 누적 분열 수가 이만큼 늘 때마다 진화 선택지 제시
+  // 진화 페이싱 (점진적으로 간격이 늘어남)
+  divisionsPerChoice: number; // 첫 진화까지 필요한 누적 분열 수(기준 간격)
+  divisionsGrowth: number; // 진화가 한 번 일어날 때마다 다음 간격에 더해지는 분열 수
   initialCounts: Record<SpeciesId, number>;
 }
 
@@ -48,21 +49,23 @@ export const environmentConfig: EnvironmentConfig = environmentSchema.parse({
   },
 
   ambientHeat: 200,
-  heatDissipation: 0.05,
+  heatDissipation: 0.1, // 열 소산을 빠르게 — 열이 곧바로 상한에 붙지 않도록
   toxicityDecay: 2,
   respirationRate: 0.9,
   respirationCo2Ratio: 0.6, // O₂ 소비 대비 CO₂ 환원 — CO₂를 광합성의 제한 요소로 유지하되 급붕괴 방지
   suffocationPenalty: 2.2,
 
-  initialCorpses: 60, // 시작 잔해: 분해/소비 세포가 초반에 굶지 않도록
+  initialCorpses: 45, // 시작 잔해: 분해/소비 세포가 초반에 굶지 않도록
   corpseRotRate: 0.3, // 방치된 시체가 서서히 부패하며 독성을 방출(느릴수록 분해자가 찾을 시간이 늘어남)
 
-  divisionsPerChoice: 100, // 분열을 많이 할수록(번성할수록) 더 자주 진화
+  // 적은 수로 시작해 키워나간다. 진화는 처음엔 자주, 갈수록 뜸하게(점진적 간격).
+  divisionsPerChoice: 40, // 첫 진화까지 40회 분열
+  divisionsGrowth: 30, // 이후 진화마다 필요한 분열 간격이 +30씩 늘어남
 
   initialCounts: {
-    photosynth: 66,
-    consumer: 16,
-    predator: 5,
-    decomposer: 12,
+    photosynth: 34,
+    consumer: 9,
+    predator: 3,
+    decomposer: 8,
   },
 }) as EnvironmentConfig;
