@@ -93,7 +93,7 @@ const rawSpecies: SpeciesDef[] = [
     preyOn: ['consumer'],
     attackEnergy: 24,
     eatCooldown: 6.0, // 소화가 오래 걸림 → 소비 세포를 과도하게 사냥해 절멸시키지 않도록(쿨↑)
-    divideEnergy: 110, // 소비 세포 과증식을 억제할 만큼은 번식하되 절멸시키진 않는 중간값
+    divideEnergy: 88, // 도달 가능한 문턱(에너지는 ~108에서 포화) — 110은 절대 못 넘어 분열 불가였음
     divideCost: 10,
     divideCooldown: 14,
     maxEnergy: 120,
