@@ -32,7 +32,7 @@ const rawChoices: ChoiceDef[] = [
     category: 'photosynth',
     effects: [{ kind: 'mutation', species: 'photosynth', field: 'toxicityTolerance', value: 1.6, rate: 0.5 }],
     baseWeight: 6,
-    boostWhen: [{ when: { kind: 'resource', key: 'toxicity', cmp: 'gt', value: 250 }, multiplier: 4 }],
+    boostWhen: [{ when: { kind: 'resource', key: 'toxicity', cmp: 'gt', value: 55 }, multiplier: 4 }],
   },
   {
     id: 'photo_thrifty',
@@ -132,7 +132,7 @@ const rawChoices: ChoiceDef[] = [
     ],
     baseWeight: 7,
     boostWhen: [
-      { when: { kind: 'resource', key: 'toxicity', cmp: 'gt', value: 300 }, multiplier: 4 },
+      { when: { kind: 'resource', key: 'toxicity', cmp: 'gt', value: 60 }, multiplier: 4 },
       { when: { kind: 'corpses', cmp: 'gt', value: 100 }, multiplier: 2 },
     ],
   },

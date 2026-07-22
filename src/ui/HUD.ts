@@ -11,7 +11,7 @@ const DANGER: Partial<Record<ResourceKey, (v: number) => boolean>> = {
   oxygen: (v) => v < 250,
   co2: (v) => v < 200,
   heat: (v) => v > 700,
-  toxicity: (v) => v > 400,
+  toxicity: (v) => v > 70,
 };
 
 /** 종별 모양 글리프 (색약 대응: 색 + 모양) */
@@ -46,9 +46,8 @@ function formatNum(v: number): string {
  * 캔버스 영역과 분리되어 있어 상/하단 UI는 팬/줌 제스처를 가로채지 않는다.
  */
 export class HUD {
-  private prev: WorldSnapshot | null = null;
   private timeEl!: HTMLElement;
-  private resEls: Record<string, { card: HTMLElement; val: HTMLElement; delta: HTMLElement }> = {};
+  private resEls: Record<string, { card: HTMLElement; val: HTMLElement }> = {};
   private speciesEls: Record<string, { chip: HTMLElement; count: HTMLElement }> = {};
   private speedBtns: HTMLButtonElement[] = [];
   private pauseBtn!: HTMLButtonElement;
@@ -94,23 +93,20 @@ export class HUD {
     // ── 환경 자원 카드 (탭 → 도움말) ──
     const cards = document.createElement('div');
     cards.className = 'res-cards';
-    const makeCard = (key: EnvKey, label: string, withDelta: boolean): HTMLButtonElement => {
+    const makeCard = (key: EnvKey, label: string): HTMLButtonElement => {
       const card = document.createElement('button');
       card.className = 'res-card';
+      // 등락(▲▼) 표시는 생략 — 값이 수시로 바뀌며 폭이 흔들려 깜빡이던 문제 제거.
       card.innerHTML = `
         <span class="res-card-name">${label}</span>
-        <span class="res-card-body"><b class="res-card-val">0</b>${withDelta ? '<span class="res-card-delta"></span>' : ''}</span>`;
+        <span class="res-card-body"><b class="res-card-val">0</b></span>`;
       card.onclick = () => this.handlers.onEnvClick(key);
       cards.appendChild(card);
       return card;
     };
     for (const key of RESOURCE_KEYS) {
-      const card = makeCard(key, RESOURCE_LABELS[key], true);
-      this.resEls[key] = {
-        card,
-        val: card.querySelector('.res-card-val')!,
-        delta: card.querySelector('.res-card-delta')!,
-      };
+      const card = makeCard(key, RESOURCE_LABELS[key]);
+      this.resEls[key] = { card, val: card.querySelector('.res-card-val')! };
     }
     this.top.appendChild(cards);
 
@@ -149,11 +145,6 @@ export class HUD {
       const v = snap.resources[key];
       el.val.textContent = formatNum(v);
       el.card.classList.toggle('danger', DANGER[key]?.(v) ?? false);
-      if (this.prev) {
-        const d = v - this.prev.resources[key];
-        el.delta.textContent = Math.abs(d) < 0.5 ? '' : d > 0 ? '▲' : '▼';
-        el.delta.className = 'res-card-delta ' + (d > 0 ? 'up' : 'down');
-      }
     }
 
     for (const def of speciesDefs) {
@@ -161,6 +152,5 @@ export class HUD {
       el.count.textContent = String(snap.counts[def.id]);
       el.chip.classList.toggle('empty', snap.counts[def.id] === 0);
     }
-    this.prev = snap;
   }
 }

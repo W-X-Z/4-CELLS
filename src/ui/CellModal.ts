@@ -77,6 +77,7 @@ export class CellModal {
 
         <div class="modal-section">개체 정보</div>
         <div class="modal-rows">
+          <div class="modal-row"><span>상태</span><b style="color:${cell.sick ? '#c084fc' : '#4ade80'}">${cell.sick ? '병듦(감염)' : '건강'}</b></div>
           <div class="modal-row"><span>세대</span><b>${cell.gen}세대</b></div>
           <div class="modal-row"><span>에너지</span><b>${cell.energy.toFixed(0)} / ${maxE.toFixed(0)} (${energyPct}%)</b></div>
           <div class="modal-row"><span>포만도</span><b>${Math.round(cell.feed * 100)}%</b></div>
