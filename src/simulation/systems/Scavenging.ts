@@ -43,9 +43,7 @@ export function runScavenging(world: World, dt: number): void {
 
     const co = world.corpses[best];
     const eat = Math.min(co.mass, def.corpseAppetite * dt);
-    const ratio = co.mass > 0 ? eat / co.mass : 0;
-    // 먹은 만큼의 잠재 독성은 방출되지 않고 중화된다(청소).
-    co.tox -= co.tox * ratio;
+    // 섭식으로 질량이 줄면 그만큼 독성 방출도 줄어든다(방출량 ∝ 남은 질량). 다 먹히면 사라진다.
     co.mass -= eat;
     co.flash = 1;
 

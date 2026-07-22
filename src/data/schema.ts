@@ -59,7 +59,6 @@ export const environmentSchema = z.object({
   atmExchange: z.number().nonnegative().default(0),
   // 시체 시스템
   initialCorpses: z.number().nonnegative().default(0),
-  corpseRotRate: z.number().nonnegative().default(0),
   // 진화 페이싱: 첫 진화까지의 분열 수 + 진화마다 늘어나는 간격
   divisionsPerChoice: z.number().positive().default(40),
   divisionsGrowth: z.number().nonnegative().default(0),

@@ -17,6 +17,7 @@ import type { QualityProfile } from '../core/device';
 import type { SpeciesDef } from '../simulation/types';
 
 const TEX_RADIUS = 16; // 텍스처 기준 반경(스프라이트에서 축소)
+const VIEW_PAD = 14; // 캔버스 가장자리 여백(px) — 경계 세포가 반쯤 잘리는 것 방지
 const CORPSE_TINT = 0x6b5a45; // 시체(유기물) 색
 const HALO_TINT = 0xffffff; // 돌연변이 개체 강조 링
 
@@ -154,7 +155,11 @@ export class PixiRenderer {
     // screen은 항상 논리(화면) px. renderer.width도 v8에선 논리 px라 resolution으로 나누면 안 됨.
     const sw = this.renderer.screen.width;
     const sh = this.renderer.screen.height;
-    const baseScale = Math.min(sw / width, sh / height) || 1; // 월드 전체가 보이는 기본 배율
+    // 월드 경계에 있는 세포가 캔버스 가장자리에서 잘리지 않도록 여백을 둔다(세포는 중심 기준 배치).
+    const pad = VIEW_PAD;
+    const availW = Math.max(1, sw - pad * 2);
+    const availH = Math.max(1, sh - pad * 2);
+    const baseScale = Math.min(availW / width, availH / height) || 1; // 월드 전체가 보이는 기본 배율
     const scale = baseScale * this.camZoom;
     this.worldScale = scale;
     // 팬 클램프: 줌인 상태에서 월드가 화면 밖으로 완전히 빠져나가지 않도록
