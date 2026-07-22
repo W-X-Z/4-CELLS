@@ -14,7 +14,7 @@ import { speciesDefs } from '../data/species';
 import { corpseRadius } from '../simulation/systems/Scavenging';
 import { clamp } from '../core/math';
 import type { QualityProfile } from '../core/device';
-import type { SpeciesDef } from '../simulation/types';
+import type { Cell, SpeciesDef } from '../simulation/types';
 
 const TEX_RADIUS = 16; // 텍스처 기준 반경(스프라이트에서 축소)
 const VIEW_PAD = 8; // 캔버스 가장자리 여백(px) — 경계 세포 잘림 방지에 충분한 최소값(여백 최소화)
@@ -64,6 +64,12 @@ export class PixiRenderer {
   private camPanX = 0; // 화면 px 단위 팬 오프셋
   private camPanY = 0;
 
+  // ── 개체 선택(탭) ──
+  /** 캔버스를 탭(짧게 클릭)하면 호출 — 드래그/핀치와 구분됨. main이 일시정지 상태에서 세포 선택에 사용. */
+  onTap: ((clientX: number, clientY: number) => void) | null = null;
+  private selected: Cell | null = null;
+  private selectSprite?: Sprite;
+
   async init(canvas: HTMLCanvasElement, world: World, quality: QualityProfile): Promise<void> {
     this.world = world;
     this.quality = quality;
@@ -86,6 +92,11 @@ export class PixiRenderer {
     this.root.addChild(this.fxLayer);
     this.fxCap = quality.isMobile ? 16 : 40;
     this.buildTextures();
+    // 선택 강조 링(세포 위, 텍스트 아래). 평소엔 숨김.
+    this.selectSprite = new Sprite(this.haloTex);
+    this.selectSprite.anchor.set(0.5);
+    this.selectSprite.visible = false;
+    this.fxLayer.addChild(this.selectSprite);
     this.fit();
 
     // 게임 갱신(NORMAL) 뒤에 실제 화면을 그린다.
@@ -172,10 +183,13 @@ export class PixiRenderer {
     this.root.y = (sh - height * scale) / 2 + this.camPanY;
   }
 
-  /** 팬/줌 입력 설정 (휠 줌·드래그 팬·핀치 줌·더블클릭 리셋) */
+  /** 팬/줌 입력 설정 (휠 줌·드래그 팬·핀치 줌·더블클릭 리셋·탭 선택) */
   private setupCamera(target: HTMLElement): void {
     const pointers = new Map<number, { x: number; y: number }>();
     let lastPinchDist = 0;
+    // 탭(선택) 판별: 단일 포인터로 눌렀다가 거의 움직이지 않고 뗐을 때만 탭으로 본다(드래그/핀치 제외).
+    let tapCandidate = false;
+    let tapMoved = 0;
 
     target.addEventListener(
       'wheel',
@@ -189,6 +203,13 @@ export class PixiRenderer {
     target.addEventListener('pointerdown', (e) => {
       target.setPointerCapture(e.pointerId);
       pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      // 첫 포인터면 탭 후보 시작, 멀티터치가 되면 탭 취소.
+      if (pointers.size === 1) {
+        tapCandidate = true;
+        tapMoved = 0;
+      } else {
+        tapCandidate = false;
+      }
     });
     target.addEventListener('pointermove', (e) => {
       const p = pointers.get(e.pointerId);
@@ -198,6 +219,7 @@ export class PixiRenderer {
       p.x = e.clientX;
       p.y = e.clientY;
       if (pointers.size === 1) {
+        if (tapCandidate) tapMoved += Math.hypot(dx, dy); // 이동 누적 → 임계 넘으면 탭 아님(드래그)
         // 드래그 팬
         this.camPanX += dx;
         this.camPanY += dy;
@@ -212,8 +234,12 @@ export class PixiRenderer {
       }
     });
     const release = (e: PointerEvent): void => {
+      // 마지막 포인터를 떼는 순간, 거의 안 움직였다면 탭(선택)으로 처리.
+      const wasLast = pointers.size === 1 && pointers.has(e.pointerId);
       pointers.delete(e.pointerId);
       if (pointers.size < 2) lastPinchDist = 0;
+      if (wasLast && tapCandidate && tapMoved < 6) this.onTap?.(e.clientX, e.clientY);
+      if (pointers.size === 0) tapCandidate = false;
     };
     target.addEventListener('pointerup', release);
     target.addEventListener('pointercancel', release);
@@ -244,6 +270,19 @@ export class PixiRenderer {
     this.camPanX = cx - wx * newScale - (sw - width * newScale) / 2;
     this.camPanY = cy - wy * newScale - (sh - height * newScale) / 2;
     this.camZoom = newZoom;
+  }
+
+  /** 화면(clientX,clientY) → 월드 좌표. 카메라 팬/줌 변환을 역으로 적용. */
+  screenToWorld(clientX: number, clientY: number): { x: number; y: number } {
+    const rect = this.resizeTarget.getBoundingClientRect();
+    const cx = clientX - rect.left;
+    const cy = clientY - rect.top;
+    return { x: (cx - this.root.x) / this.worldScale, y: (cy - this.root.y) / this.worldScale };
+  }
+
+  /** 선택된 세포(강조 링 표시). null이면 해제. */
+  setSelected(cell: Cell | null): void {
+    this.selected = cell;
   }
 
   /** 월드 좌표 (x,y)에서 위로 떠오르며 사라지는 텍스트를 생성 */
@@ -403,6 +442,25 @@ export class PixiRenderer {
     }
     for (let i = n; i < this.pool.length; i++) this.pool[i].visible = false;
     for (let i = haloCount; i < this.haloPool.length; i++) this.haloPool[i].visible = false;
+
+    // ── 선택 강조 링 ──
+    const sel = this.selectSprite;
+    if (sel) {
+      const c = this.selected;
+      if (c && c.alive) {
+        const def = this.world.species[c.species] as SpeciesDef;
+        sel.visible = true;
+        sel.tint = 0x38bdf8; // 강조색(시안)
+        sel.x = c.x;
+        sel.y = c.y;
+        // 은은한 맥동 — 결정론에 무관(코스메틱, 프레임 카운터 기반)
+        const pulse = 1 + Math.sin(this.frame * 0.15) * 0.08;
+        sel.scale.set(((def.radius * 2.6) / TEX_RADIUS) * pulse);
+        sel.alpha = 0.9;
+      } else {
+        sel.visible = false;
+      }
+    }
   }
 
   destroy(): void {
