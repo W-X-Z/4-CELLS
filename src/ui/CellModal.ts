@@ -1,6 +1,7 @@
 import type { World } from '../simulation/World';
 import type { Cell, GeneField } from '../simulation/types';
 import { eff } from '../simulation/genetics';
+import { GENE_LABELS } from './FeedbackLayer';
 
 /** 종별 모양 글리프 (색약 대응: 색 + 모양) — HUD와 동일 */
 const SHAPE_GLYPH: Record<string, string> = {
@@ -8,19 +9,6 @@ const SHAPE_GLYPH: Record<string, string> = {
   diamond: '◆',
   triangle: '▲',
   ring: '○',
-};
-
-/** 유전 형질 필드 → 한글 라벨 (보유 돌연변이 표시용) */
-const GENE_LABEL: Record<GeneField, string> = {
-  moveSpeed: '이동 속도',
-  vision: '시야',
-  energyFromIntake: '광합성 효율',
-  upkeep: '기초 대사',
-  attackEnergy: '포식 효율',
-  divideEnergy: '분열 에너지',
-  maxEnergy: '최대 에너지',
-  toxicityTolerance: '독성 내성',
-  energyFromCorpse: '분해 효율',
 };
 
 function hex(n: number): string {
@@ -59,7 +47,7 @@ export class CellModal {
           const mul = cell.genes![f] ?? 1;
           const pct = Math.round((mul - 1) * 100);
           const sign = pct > 0 ? '+' : '';
-          return `<div class="modal-row"><span>${GENE_LABEL[f]}</span><b>${sign}${pct}%</b></div>`;
+          return `<div class="modal-row"><span>${GENE_LABELS[f]}</span><b>${sign}${pct}%</b></div>`;
         })
       : [];
 

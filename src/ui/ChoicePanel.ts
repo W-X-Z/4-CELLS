@@ -21,6 +21,8 @@ function emergenceRate(c: ChoiceDef): number {
 /** 선택지 오버레이. 표시되는 동안 시뮬레이션은 일시정지된다. */
 export class ChoicePanel {
   private el: HTMLElement;
+  /** 리롤(다시 뽑기) 콜백 — main이 game.reroll()에 연결. */
+  onReroll: (() => void) | null = null;
 
   constructor(
     private root: HTMLElement,
@@ -31,7 +33,7 @@ export class ChoicePanel {
     this.root.appendChild(this.el);
   }
 
-  show(choices: ChoiceDef[]): void {
+  show(choices: ChoiceDef[], rerollsLeft = 0): void {
     this.el.innerHTML = `<div class="choice-title">진화의 갈림길 — 돌연변이를 하나 선택하세요</div>`;
     const grid = document.createElement('div');
     grid.className = 'choice-grid';
@@ -55,6 +57,15 @@ export class ChoicePanel {
       grid.appendChild(card);
     }
     this.el.appendChild(grid);
+
+    // 리롤(다시 뽑기) 버튼 — 남은 횟수 표시, 0이면 비활성.
+    const reroll = document.createElement('button');
+    reroll.className = 'btn choice-reroll';
+    reroll.textContent = `🎲 다시 뽑기 (남은 횟수 ${rerollsLeft})`;
+    reroll.disabled = rerollsLeft <= 0;
+    reroll.onclick = () => this.onReroll?.();
+    this.el.appendChild(reroll);
+
     this.el.classList.remove('hidden');
   }
 

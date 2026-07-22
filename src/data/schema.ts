@@ -8,6 +8,7 @@ const partialResources = z.record(resourceKey, z.number()).default({});
 const geneField = z.enum([
   'moveSpeed', 'vision', 'energyFromIntake', 'upkeep', 'attackEnergy',
   'divideEnergy', 'maxEnergy', 'toxicityTolerance', 'energyFromCorpse',
+  'eatCooldown', 'divideCost', 'corpseAppetite',
 ]);
 
 export const speciesSchema = z.object({

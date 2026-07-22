@@ -26,14 +26,14 @@ export function runReproduction(world: World, _dt: number): void {
 
     // 분열 비용을 먼저 소각(무한 증식 방지) 후 남은 에너지를 자식과 절반씩 나눈다.
     // => 먹이(광합성/포식/분해)로 순수익을 내지 못하면 divideEnergy에 다시 도달하지 못해 분열이 멈춘다.
-    const remaining = c.energy - def.divideCost;
+    const remaining = c.energy - eff(def, c, 'divideCost');
     if (remaining <= 0) continue;
     const childEnergy = remaining / 2;
     c.energy = childEnergy;
     c.divideTimer = def.divideCooldown;
     // 분열 직후엔 소화(배부름) 쿨을 부여해 곧바로 먹이를 뜯지 못하게 한다.
     // (소비 세포가 분열하자마자 광합성 세포를 급속히 절멸시키던 연쇄를 완화)
-    if (def.eatCooldown > 0) c.eatTimer = Math.max(c.eatTimer, def.eatCooldown);
+    if (def.eatCooldown > 0) c.eatTimer = Math.max(c.eatTimer, eff(def, c, 'eatCooldown'));
     c.flash = 0.6;
 
     const offset = def.radius * 2;
