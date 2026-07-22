@@ -3,6 +3,11 @@ import { eff } from '../genetics';
 import type { World } from '../World';
 
 const neighbors: number[] = [];
+const sepNeighbors: number[] = [];
+
+/** 동종 회피(분산): 같은 종끼리 밀어내는 반경/강도 — 뭉침을 막아 생태계를 고르게 퍼뜨린다. */
+const SEP_RADIUS = 24;
+const SEP_STRENGTH = 0.6;
 
 /**
  * 열에 따른 이동속도 배율(언덕형 곡선).
@@ -80,6 +85,9 @@ export function runMovement(world: World, dt: number): void {
       randomWalk(c, speed, dt, rng);
     }
 
+    // 동종 회피: 같은 종 이웃에게서 멀어지는 힘을 더해 뭉침을 방지(고른 분산 → 자연 피난처)
+    separate(world, i, c, speed);
+
     // 위치 적분 + 벽 반사
     c.x += c.vx * dt;
     c.y += c.vy * dt;
@@ -87,6 +95,38 @@ export function runMovement(world: World, dt: number): void {
     else if (c.x > cfg.width) { c.x = cfg.width; c.vx = -c.vx; }
     if (c.y < 0) { c.y = 0; c.vy = -c.vy; }
     else if (c.y > cfg.height) { c.y = cfg.height; c.vy = -c.vy; }
+  }
+}
+
+/** 동종 회피: 같은 종 이웃들로부터 멀어지는 방향으로 속도를 보정(거리가 가까울수록 강함). */
+function separate(world: World, i: number, c: { x: number; y: number; vx: number; vy: number; species: string }, speed: number): void {
+  world.spatial.query(c.x, c.y, SEP_RADIUS, sepNeighbors);
+  let sx = 0;
+  let sy = 0;
+  let n = 0;
+  for (let k = 0; k < sepNeighbors.length; k++) {
+    const j = sepNeighbors[k];
+    if (j === i) continue;
+    const o = world.cells[j];
+    if (!o || !o.alive || o.species !== c.species) continue;
+    const dx = c.x - o.x;
+    const dy = c.y - o.y;
+    const d2 = dx * dx + dy * dy;
+    if (d2 > 0 && d2 < SEP_RADIUS * SEP_RADIUS) {
+      const inv = 1 / d2; // 가까울수록 강한 반발
+      sx += dx * inv;
+      sy += dy * inv;
+      n++;
+    }
+  }
+  if (n === 0) return;
+  const len = Math.hypot(sx, sy) || 1;
+  c.vx += (sx / len) * speed * SEP_STRENGTH;
+  c.vy += (sy / len) * speed * SEP_STRENGTH;
+  const sp = Math.hypot(c.vx, c.vy);
+  if (sp > speed) {
+    c.vx = (c.vx / sp) * speed;
+    c.vy = (c.vy / sp) * speed;
   }
 }
 

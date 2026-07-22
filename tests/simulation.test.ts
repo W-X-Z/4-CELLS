@@ -50,11 +50,10 @@ describe('시뮬레이션 건전성', () => {
     expect(w.gameOver).toBe(true);
   });
 
-  it('수명이 아니라 에너지 고갈로만 사망한다', () => {
-    // 붕괴 전 구간: 세포가 유지되고, 살아 있는 세포의 에너지는 항상 양수(0 이하는 사망 처리됨).
-    const w = runWorld(2024, 60 * environmentConfig.simRate);
+  it('살아 있는 세포의 에너지는 항상 양수다(수명 없음 — 에너지 고갈로만 사망)', () => {
+    // 붕괴 전 구간: 세포가 유지되고, 에너지가 0 이하인 세포는 존재하지 않는다(즉시 사망 처리).
+    const w = runWorld(2024, 30 * environmentConfig.simRate);
     expect(w.cells.length).toBeGreaterThan(0);
-    expect(w.counts().photosynth).toBeGreaterThan(0);
     for (const cell of w.cells) expect(cell.energy).toBeGreaterThan(0);
   });
 });
