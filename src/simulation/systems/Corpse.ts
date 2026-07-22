@@ -1,4 +1,5 @@
 import type { World } from '../World';
+import { CORPSE_CO2_PER_MASS } from './Scavenging';
 
 /**
  * 시체 부패 시스템: 방치된 시체는 서서히 질량을 잃으며 잠재 독성을 전역 풀로 방출한다.
@@ -19,5 +20,7 @@ export function runCorpseDecay(world: World, dt: number): void {
     co.mass -= lost;
     co.tox -= toxReleased;
     if (toxReleased > 0) env.add('toxicity', toxReleased);
+    // 부패도 탄소를 CO₂로 되돌린다(분해 세포가 못 먹고 방치된 몫)
+    env.add('co2', lost * CORPSE_CO2_PER_MASS);
   }
 }

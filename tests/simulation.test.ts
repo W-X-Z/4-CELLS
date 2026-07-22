@@ -43,9 +43,14 @@ describe('시뮬레이션 건전성', () => {
     expect(c.consumer + c.predator).toBeGreaterThan(0);
   });
 
-  it('개입이 없으면 결국 붕괴한다(생태계 취약성)', () => {
-    const w = runWorld(777, 600 * environmentConfig.simRate); // 최대 600초
-    expect(w.gameOver).toBe(true);
+  // 자기 그늘(수용력) 도입 후: 광합성이 무한 폭주하지 않고 개체군이 안정화된다.
+  // (게임 방향 확정 전 잠정 — '붕괴 스테이크' 유지로 바꾸면 이 테스트도 함께 수정)
+  it('자기 그늘로 광합성 개체군이 안정화된다(폭주/전멸하지 않음)', () => {
+    const w = runWorld(777, 600 * environmentConfig.simRate); // 600초
+    const c = w.counts();
+    expect(w.gameOver).toBe(false);
+    expect(c.photosynth).toBeGreaterThan(0);
+    expect(c.photosynth).toBeLessThan(400); // 수용력 근처에서 평형 — 무한 폭주 없음
   });
 });
 

@@ -4,6 +4,9 @@ import type { World } from '../World';
 
 const neighbors: number[] = [];
 
+/** 시체 질량 1을 대사할 때 풀로 되돌리는 CO₂ 양 (탄소 순환 복귀) */
+export const CORPSE_CO2_PER_MASS = 0.15;
+
 /**
  * 시체 섭식 시스템: corpseAppetite가 있는 세포(소비/분해)가 근접한 시체에서 유기물을 먹는다.
  * 분해 세포가 시체를 먹어치우면 그만큼 부패 독성이 방출되지 않으므로, 청소부 역할을 한다.
@@ -51,6 +54,8 @@ export function runScavenging(world: World, dt: number): void {
     if (def.eatCooldown > 0) c.eatTimer = def.eatCooldown;
     c.flash = Math.max(c.flash, 0.7);
     env.add('heat', eat * energyFromCorpse * dt * 0.1);
+    // 분해: 시체(고정된 탄소)를 대사하며 CO₂를 되돌린다 → 탄소 순환을 닫는다
+    env.add('co2', eat * CORPSE_CO2_PER_MASS);
     world.pushEvent({ type: 'decompose', x: co.x, y: co.y });
   }
 }
