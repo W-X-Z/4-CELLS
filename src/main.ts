@@ -34,121 +34,128 @@ startupStatus.className = 'startup-status';
 startupStatus.textContent = '세포 생태계를 불러오는 중…';
 uiRoot.appendChild(startupStatus);
 
-try {
-  await withTimeout(renderer.init(canvas, game.world, quality), 12_000);
-  startupStatus.remove();
-} catch (error) {
-  console.error('Renderer initialization failed:', error);
-  startupStatus.classList.add('startup-error');
-  startupStatus.innerHTML = `
+// top-level await 금지: Pixi가 init 중 동적 import하는 환경 청크(browserAll)가 번들에서는
+// 이 모듈이 포함된 메인 청크를 다시 import한다. 모듈 평가가 await로 멈춰 있으면 서로를
+// 기다리는 데드락이 되어 프로덕션 빌드에서만 초기화가 영원히 끝나지 않는다.
+void bootstrap();
+
+async function bootstrap(): Promise<void> {
+  try {
+    await withTimeout(renderer.init(canvas, game.world, quality), 12_000);
+    startupStatus.remove();
+  } catch (error) {
+    console.error('Renderer initialization failed:', error);
+    startupStatus.classList.add('startup-error');
+    startupStatus.innerHTML = `
     <strong>그래픽 초기화에 실패했습니다.</strong>
     <span>Chrome의 하드웨어 가속 또는 WebGL 사용 가능 여부를 확인한 뒤 새로고침해 주세요.</span>`;
-  throw error;
-}
-
-const feedback = new FeedbackLayer(uiRoot);
-
-// 모달을 닫으면 (열기 전에 돌아가고 있었다면) 재개
-let resumeOnModalClose = false;
-const infoModal = new InfoModal(uiRoot, () => {
-  if (resumeOnModalClose && game.phase === 'paused') {
-    game.togglePause();
-    hud.setPaused(false);
+    return;
   }
-  resumeOnModalClose = false;
-});
 
-const hud = new HUD(uiRoot, {
-  onSpeed: (s: Speed) => game.setSpeed(s),
-  onPause: () => {
-    game.togglePause();
-    hud.setPaused(game.phase === 'paused');
-  },
-  onSpeciesClick: (id) => {
-    if (game.phase === 'choosing' || game.phase === 'gameover') return;
-    // 세포 도움말: 시뮬레이션을 멈추고 모달 표시
-    resumeOnModalClose = game.phase === 'running';
-    if (game.phase === 'running') {
+  const feedback = new FeedbackLayer(uiRoot);
+
+  // 모달을 닫으면 (열기 전에 돌아가고 있었다면) 재개
+  let resumeOnModalClose = false;
+  const infoModal = new InfoModal(uiRoot, () => {
+    if (resumeOnModalClose && game.phase === 'paused') {
+      game.togglePause();
+      hud.setPaused(false);
+    }
+    resumeOnModalClose = false;
+  });
+
+  const hud = new HUD(uiRoot, {
+    onSpeed: (s: Speed) => game.setSpeed(s),
+    onPause: () => {
+      game.togglePause();
+      hud.setPaused(game.phase === 'paused');
+    },
+    onSpeciesClick: (id) => {
+      if (game.phase === 'choosing' || game.phase === 'gameover') return;
+      // 세포 도움말: 시뮬레이션을 멈추고 모달 표시
+      resumeOnModalClose = game.phase === 'running';
+      if (game.phase === 'running') {
+        game.togglePause();
+        hud.setPaused(true);
+      }
+      infoModal.show(id, game.world, game.appliedChoices);
+    },
+  });
+
+  const choicePanel = new ChoicePanel(uiRoot, (id) => {
+    const def = choiceDefs.find((c) => c.id === id);
+    if (def) feedback.showEffects(def.title, def.effects);
+    game.resolveChoice(id);
+  });
+
+  const gameOver = new GameOverPanel(uiRoot, () => {
+    // 새 시드로 재시작(깔끔한 상태 초기화)
+    const p = new URLSearchParams();
+    p.set('seed', String(Math.floor(Math.random() * 0xffffffff)));
+    location.search = p.toString();
+  });
+
+  game.onChoicesReady = (choices) => choicePanel.show(choices);
+  game.onGameOver = (snap) => gameOver.show(snap, seed);
+
+  // ── 메인 루프 (렌더는 app.ticker, 시뮬은 고정 타임스텝) ──
+  let hudAccum = 0;
+  renderer.app.ticker.add((ticker) => {
+    game.advance(ticker.deltaMS);
+    renderer.render();
+    hudAccum += ticker.deltaMS;
+    if (hudAccum >= 100) {
+      hudAccum = 0;
+      hud.update(game.snapshot());
+    }
+  });
+
+  // ── 입력 ──
+  window.addEventListener('keydown', (e) => {
+    if (infoModal.visible) {
+      if (e.key === 'Escape' || e.key === ' ') {
+        e.preventDefault();
+        infoModal.hide();
+      }
+      return;
+    }
+    if (e.key === ' ') {
+      e.preventDefault();
+      game.togglePause();
+      hud.setPaused(game.phase === 'paused');
+    } else if (e.key === '1' || e.key === '2' || e.key === '4') {
+      const s = Number(e.key) as Speed;
+      game.setSpeed(s);
+      hud.setActiveSpeed(s);
+    }
+  });
+
+  // ── 리사이즈/회전: 월드 경계를 새 화면 비율로 갱신 ──
+  let resizeTimer = 0;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = window.setTimeout(() => {
+      const { width, height } = computeWorldSize(window.innerWidth, window.innerHeight);
+      game.world.resize(width, height);
+    }, 150);
+  });
+
+  // ── 백그라운드 자동 일시정지 ──
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && game.phase === 'running') {
       game.togglePause();
       hud.setPaused(true);
     }
-    infoModal.show(id, game.world, game.appliedChoices);
-  },
-});
+  });
 
-const choicePanel = new ChoicePanel(uiRoot, (id) => {
-  const def = choiceDefs.find((c) => c.id === id);
-  if (def) feedback.showEffects(def.title, def.effects);
-  game.resolveChoice(id);
-});
+  // 초기 HUD 1회 갱신
+  hud.update(game.snapshot());
 
-const gameOver = new GameOverPanel(uiRoot, () => {
-  // 새 시드로 재시작(깔끔한 상태 초기화)
-  const p = new URLSearchParams();
-  p.set('seed', String(Math.floor(Math.random() * 0xffffffff)));
-  location.search = p.toString();
-});
-
-game.onChoicesReady = (choices) => choicePanel.show(choices);
-game.onGameOver = (snap) => gameOver.show(snap, seed);
-
-// ── 메인 루프 (렌더는 app.ticker, 시뮬은 고정 타임스텝) ──
-let hudAccum = 0;
-renderer.app.ticker.add((ticker) => {
-  game.advance(ticker.deltaMS);
-  renderer.render();
-  hudAccum += ticker.deltaMS;
-  if (hudAccum >= 100) {
-    hudAccum = 0;
-    hud.update(game.snapshot());
+  // 개발 콘솔 디버그 핸들 (밸런스 튜닝/검증용)
+  if (import.meta.env.DEV) {
+    (window as unknown as { __game: Game; __renderer: PixiRenderer }).__game = game;
+    (window as unknown as { __game: Game; __renderer: PixiRenderer }).__renderer = renderer;
   }
-});
-
-// ── 입력 ──
-window.addEventListener('keydown', (e) => {
-  if (infoModal.visible) {
-    if (e.key === 'Escape' || e.key === ' ') {
-      e.preventDefault();
-      infoModal.hide();
-    }
-    return;
-  }
-  if (e.key === ' ') {
-    e.preventDefault();
-    game.togglePause();
-    hud.setPaused(game.phase === 'paused');
-  } else if (e.key === '1' || e.key === '2' || e.key === '4') {
-    const s = Number(e.key) as Speed;
-    game.setSpeed(s);
-    hud.setActiveSpeed(s);
-  }
-});
-
-// ── 리사이즈/회전: 월드 경계를 새 화면 비율로 갱신 ──
-let resizeTimer = 0;
-window.addEventListener('resize', () => {
-  clearTimeout(resizeTimer);
-  resizeTimer = window.setTimeout(() => {
-    const { width, height } = computeWorldSize(window.innerWidth, window.innerHeight);
-    game.world.resize(width, height);
-  }, 150);
-});
-
-// ── 백그라운드 자동 일시정지 ──
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden && game.phase === 'running') {
-    game.togglePause();
-    hud.setPaused(true);
-  }
-});
-
-// 초기 HUD 1회 갱신
-hud.update(game.snapshot());
-
-// 개발 콘솔 디버그 핸들 (밸런스 튜닝/검증용)
-if (import.meta.env.DEV) {
-  (window as unknown as { __game: Game; __renderer: PixiRenderer }).__game = game;
-  (window as unknown as { __game: Game; __renderer: PixiRenderer }).__renderer = renderer;
 }
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
