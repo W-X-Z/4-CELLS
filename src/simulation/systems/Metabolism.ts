@@ -3,6 +3,13 @@ import type { World } from '../World';
 import { RESOURCE_KEYS, type ResourceKey } from '../types';
 
 /**
+ * 자기 그늘(self-shading) 수용력.
+ * 광합성 세포가 붐빌수록 빛/공간 경쟁으로 효율이 떨어져, 개체군이 무한 폭주하지 않고
+ * 일정 수준에서 안정된다(로지스틱 성장). 값이 클수록 더 많은 개체까지 허용.
+ */
+const PHOTO_CARRYING = 130;
+
+/**
  * 대사 시스템: 자원 소비/생산 및 에너지 수지.
  * 확보 비율(satisfaction)이 생산량과 에너지 획득에 함께 곱해져
  * 자원이 마르면 생산도 함께 줄어드는 연쇄가 발생한다.
@@ -10,12 +17,15 @@ import { RESOURCE_KEYS, type ResourceKey } from '../types';
  */
 export function runMetabolism(world: World, dt: number): void {
   const { cells, env, cfg } = world;
+  // 광합성 자기 그늘: 개체가 많을수록 효율↓ (붐빌수록 빛/공간 경쟁)
+  const photoShade = PHOTO_CARRYING / (PHOTO_CARRYING + world.photoCount);
   for (let i = 0; i < cells.length; i++) {
     const c = cells[i];
     if (!c.alive) continue;
     const def = world.species[c.species];
+    const shade = c.species === 'photosynth' ? photoShade : 1;
 
-    const energyFromIntake = eff(def, c, 'energyFromIntake');
+    const energyFromIntake = eff(def, c, 'energyFromIntake') * shade;
     const upkeep = eff(def, c, 'upkeep');
     const maxEnergy = eff(def, c, 'maxEnergy');
 
@@ -30,18 +40,18 @@ export function runMetabolism(world: World, dt: number): void {
       if (ratio < satisfaction) satisfaction = ratio;
     }
 
-    // 2) 실제 소비
+    // 2) 실제 소비 (자기 그늘 반영)
     for (const key of RESOURCE_KEYS) {
       const amt = def.intake[key];
       if (!amt) continue;
-      env.consume(key as ResourceKey, amt * dt * satisfaction);
+      env.consume(key as ResourceKey, amt * dt * satisfaction * shade);
     }
 
-    // 3) 생산(확보 비율에 비례)
+    // 3) 생산(확보 비율 + 자기 그늘에 비례)
     for (const key of RESOURCE_KEYS) {
       const amt = def.output[key];
       if (!amt) continue;
-      env.add(key as ResourceKey, amt * dt * satisfaction);
+      env.add(key as ResourceKey, amt * dt * satisfaction * shade);
     }
 
     // 3.5) 기회적 정화(scavenge): 있으면 소비하고 보너스 에너지, 없어도 굶지 않음

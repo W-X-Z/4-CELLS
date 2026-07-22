@@ -22,7 +22,7 @@ const rawSpecies: SpeciesDef[] = [
     moveMode: 'drift',
     vision: 0,
     intake: { co2: 1.8 },
-    output: { oxygen: 4.5 },
+    output: { oxygen: 4.5 }, // 자기 그늘로 개체수가 제한되므로 O₂는 원래대로 순생산
     energyFromIntake: 6,
     scavenge: {},
     energyFromScavenge: 0,
@@ -61,8 +61,8 @@ const rawSpecies: SpeciesDef[] = [
     energyFromCorpse: 0,
     preyOn: ['photosynth'],
     attackEnergy: 16,
-    eatCooldown: 1.2, // 한 번 먹으면 소화 시간(배부름)
-    divideEnergy: 64, // 더 많이 먹어야 분열 → 광합성을 급격히 절멸시키는 과증식 완화
+    eatCooldown: 3.5, // 소화 시간을 늘려 광합성을 급속 절멸시키지 않도록(배부름 강화)
+    divideEnergy: 66, // 광합성이 자기 그늘로 안정되므로 소비 세포 번식을 완화
     divideCost: 8,
     divideCooldown: 6,
     maxEnergy: 110,
@@ -91,7 +91,7 @@ const rawSpecies: SpeciesDef[] = [
     energyFromCorpse: 0,
     preyOn: ['consumer'],
     attackEnergy: 24,
-    eatCooldown: 2.0, // 큰 포식자일수록 소화가 오래 걸린다(배부름)
+    eatCooldown: 3.0, // 소화가 오래 걸림 → 소비 세포를 과도하게 절멸시키지 않도록
     divideEnergy: 100,
     divideCost: 14,
     divideCooldown: 14,

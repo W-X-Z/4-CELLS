@@ -42,6 +42,7 @@ export class World {
   time = 0;
   tick = 0;
   divisions = 0; // 누적 분열 수(진화 트리거)
+  photoCount = 0; // 현재 광합성 세포 수(자기 그늘 효과 계산용, 매 스텝 갱신)
   gameOver = false;
   private nextId = 1;
   private nextCorpseId = 1;
@@ -163,13 +164,16 @@ export class World {
       this.corpseHash.insert(i, co.x, co.y);
     }
 
-    // 2) 타이머/나이 갱신
+    // 2) 타이머/나이 갱신 + 광합성 개체수 집계(자기 그늘 효과)
+    let photo = 0;
     for (const c of this.cells) {
       c.age += dt;
       if (c.divideTimer > 0) c.divideTimer -= dt;
       if (c.eatTimer > 0) c.eatTimer -= dt;
       if (c.flash > 0) c.flash = Math.max(0, c.flash - dt * 2);
+      if (c.species === 'photosynth') photo++;
     }
+    this.photoCount = photo;
     for (const co of this.corpses) {
       if (co.flash > 0) co.flash = Math.max(0, co.flash - dt * 2);
     }

@@ -52,7 +52,7 @@ export const environmentConfig: EnvironmentConfig = environmentSchema.parse({
   heatDissipation: 0.1, // 열 소산을 빠르게 — 열이 곧바로 상한에 붙지 않도록
   toxicityDecay: 2,
   respirationRate: 0.9,
-  respirationCo2Ratio: 0.6, // O₂ 소비 대비 CO₂ 환원 — CO₂를 광합성의 제한 요소로 유지하되 급붕괴 방지
+  respirationCo2Ratio: 0.45, // O₂ 소비 대비 CO₂ 환원 — 호흡이 탄소를 되돌린다(순환 균형)
   suffocationPenalty: 2.2,
 
   initialCorpses: 45, // 시작 잔해: 분해/소비 세포가 초반에 굶지 않도록
