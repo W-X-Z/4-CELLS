@@ -196,7 +196,7 @@ export class PixiRenderer {
     const predPerFrame = this.quality.isMobile ? 2 : 4;
     for (const e of this.world.drainEvents()) {
       if (e.type === 'predation' && predShown < predPerFrame) {
-        this.spawnFloatText('포식!', e.x, e.y, 0xf87171, 13);
+        this.spawnFloatText('eat!', e.x, e.y, 0xf87171, 13);
         predShown++;
       }
     }

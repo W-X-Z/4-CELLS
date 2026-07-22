@@ -15,6 +15,7 @@ export function runScavenging(world: World, dt: number): void {
     if (!c.alive) continue;
     const def = world.species[c.species];
     if (def.corpseAppetite <= 0) continue;
+    if (c.eatTimer > 0) continue; // 소화 중(배부름)
     const maxE = eff(def, c, 'maxEnergy');
     if (c.energy >= maxE * 0.95) continue; // 거의 배부르면 섭식 안 함
 
@@ -47,6 +48,7 @@ export function runScavenging(world: World, dt: number): void {
 
     const energyFromCorpse = eff(def, c, 'energyFromCorpse');
     c.energy = Math.min(maxE, c.energy + eat * energyFromCorpse);
+    if (def.eatCooldown > 0) c.eatTimer = def.eatCooldown;
     c.flash = Math.max(c.flash, 0.7);
     env.add('heat', eat * energyFromCorpse * dt * 0.1);
     world.pushEvent({ type: 'decompose', x: co.x, y: co.y });

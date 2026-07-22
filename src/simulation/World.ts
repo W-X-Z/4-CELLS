@@ -97,6 +97,7 @@ export class World {
       energy,
       age: 0,
       divideTimer: 0,
+      eatTimer: 0,
       alive: true,
       flash: 0,
     };
@@ -118,6 +119,7 @@ export class World {
       energy,
       age: 0,
       divideTimer: this.species[parent.species].divideCooldown,
+      eatTimer: 0,
       alive: true,
       flash: 0.6,
       genes,
@@ -165,6 +167,7 @@ export class World {
     for (const c of this.cells) {
       c.age += dt;
       if (c.divideTimer > 0) c.divideTimer -= dt;
+      if (c.eatTimer > 0) c.eatTimer -= dt;
       if (c.flash > 0) c.flash = Math.max(0, c.flash - dt * 2);
     }
     for (const co of this.corpses) {
