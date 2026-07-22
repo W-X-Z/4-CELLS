@@ -97,6 +97,7 @@ export class World {
       energy,
       divideTimer: 0,
       eatTimer: 0,
+      feed: 1,
       alive: true,
       flash: 0,
     };
@@ -118,6 +119,7 @@ export class World {
       energy,
       divideTimer: this.species[parent.species].divideCooldown,
       eatTimer: 0,
+      feed: 1,
       alive: true,
       flash: 0.6,
       genes,
@@ -128,6 +130,8 @@ export class World {
   /** 시체 생성 (사망/포식/초기 잔해) */
   spawnCorpse(x: number, y: number, mass: number, tox: number): void {
     if (mass <= 0) return;
+    // 시체는 영구히 남으므로 성능 안전장치로 상한을 두고, 넘치면 가장 오래된 것을 제거한다.
+    if (this.corpses.length >= 2000) this.corpses.shift();
     this.corpses.push({
       id: this.nextCorpseId++,
       x: clamp(x, 0, this.cfg.width),

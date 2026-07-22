@@ -24,8 +24,8 @@ export class Environment {
     r.co2 = damp(r.co2, this.cfg.co2Atmosphere, this.cfg.atmExchange, dt);
     // 열 소산(주변 온도로 수렴)
     r.heat = damp(r.heat, this.cfg.ambientHeat, this.cfg.heatDissipation, dt);
-    // 독성 자연 감쇠
-    r.toxicity -= this.cfg.toxicityDecay * dt;
+    // 독성 자연 감쇠(비례) — 방출량에 따라 평형을 이루어 무한 폭주하지 않는다
+    r.toxicity = damp(r.toxicity, 0, this.cfg.toxicityDecay, dt);
     // 하한만 0으로 고정(상한 없음 — 실제 축적을 그대로 반영). displayCaps는 HUD 위험표시용.
     for (const key of RESOURCE_KEYS) {
       if (r[key] < 0) r[key] = 0;

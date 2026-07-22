@@ -111,6 +111,7 @@ export interface Cell {
   energy: number;
   divideTimer: number;
   eatTimer: number; // 소화 쿨다운. 0보다 크면 아직 못 먹는다(배부름).
+  feed: number; // 직전 대사의 intake 확보율(광합성=CO₂ 충족도). 자원 부족 시 분열 억제에 사용.
   alive: boolean;
   // 렌더링 피드백용 순간 이벤트 플래그 (렌더러가 소비 후 리셋)
   flash: number; // 0..1, 최근 상호작용 강조

@@ -63,8 +63,8 @@ const rawSpecies: SpeciesDef[] = [
     preyOn: ['photosynth'],
     attackEnergy: 16,
     eatCooldown: 2.0, // 소화 시간(배부름) — 광합성 급속 절멸 방지와 생존 사이의 절충
-    divideEnergy: 60,
-    divideCost: 8,
+    divideEnergy: 44, // 낮춰서 더 쉽게 번식 → 조기 멸종 방지
+    divideCost: 6,
     divideCooldown: 6,
     maxEnergy: 110,
     toxicityTolerance: 350,
@@ -93,8 +93,8 @@ const rawSpecies: SpeciesDef[] = [
     preyOn: ['consumer'],
     attackEnergy: 24,
     eatCooldown: 3.0, // 소화가 오래 걸림 → 소비 세포를 과도하게 절멸시키지 않도록
-    divideEnergy: 100,
-    divideCost: 14,
+    divideEnergy: 88, // 낮췄지만(100→88) 과도한 포식자 폭증은 막아 소비 세포와 공존
+    divideCost: 10,
     divideCooldown: 14,
     maxEnergy: 120,
     toxicityTolerance: 300,
@@ -114,12 +114,12 @@ const rawSpecies: SpeciesDef[] = [
     intake: {},
     output: {},
     energyFromIntake: 0,
-    scavenge: { toxicity: 4 }, // 전역 독성을 흡수해 정화(보너스 에너지)
-    energyFromScavenge: 2,
+    scavenge: {}, // 독성을 직접 흡수하지 않는다 — 시체를 먹어 독성의 '원천'을 제거하는 방식으로 정화
+    energyFromScavenge: 0,
     upkeep: 0.9,
     respires: true,
-    corpseAppetite: 5, // 시체를 먹어 유기물을 순환 — 방치 부패(독성)를 막는 청소부
-    energyFromCorpse: 2.2,
+    corpseAppetite: 5, // 시체를 먹어 유기물을 순환 — 시체를 치워 독성 방출을 막는 청소부
+    energyFromCorpse: 2.4,
     preyOn: [],
     attackEnergy: 0,
     eatCooldown: 0, // 청소부 역할 유지 위해 시체 섭식엔 소화 제약을 두지 않음
