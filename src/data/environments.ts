@@ -58,9 +58,10 @@ export const environmentConfig: EnvironmentConfig = environmentSchema.parse({
   respirationCo2Ratio: 0.5, // O₂ 소비 대비 CO₂ 환원 — 호흡하는 세포가 탄소를 되돌린다
   suffocationPenalty: 2.2,
   // 대기 교환: 광합성이 O₂를 밀어 올리고 CO₂를 끌어내리면 대기가 반대로 밀어 되돌린다.
+  // 교환을 빠르게 하면 과증식 후에도 CO₂가 빨리 회복돼 생존 개체가 안정적으로 남는다.
   o2Atmosphere: 500,
-  co2Atmosphere: 600,
-  atmExchange: 0.08,
+  co2Atmosphere: 700,
+  atmExchange: 0.14,
 
   initialCorpses: 45, // 시작 잔해: 분해/소비 세포가 초반에 굶지 않도록
 

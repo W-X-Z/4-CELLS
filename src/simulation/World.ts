@@ -97,6 +97,7 @@ export class World {
       energy,
       divideTimer: 0,
       eatTimer: 0,
+      feed: 1,
       alive: true,
       flash: 0,
     };
@@ -118,6 +119,7 @@ export class World {
       energy,
       divideTimer: this.species[parent.species].divideCooldown,
       eatTimer: 0,
+      feed: 1,
       alive: true,
       flash: 0.6,
       genes,

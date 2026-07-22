@@ -2,6 +2,13 @@ import { eff } from '../genetics';
 import type { World } from '../World';
 
 /**
+ * 자원(intake)이 이 확보율 미만이면 분열하지 않는다.
+ * 광합성 세포가 비축 에너지로 CO₂ 부족 상황에서도 분열해 과증식→집단 아사하는 것을 막는다.
+ * (intake가 없는 종은 feed=1이라 영향 없음 — 포식/섭취로 얻은 에너지로 정상 분열.)
+ */
+const MIN_FEED_TO_DIVIDE = 0.75;
+
+/**
  * 번식 시스템: 에너지가 분열 임계 이상이고 쿨다운이 끝난 세포가 분열한다.
  * 부모 에너지를 자식과 절반씩 나눈다. 신생아는 births 버퍼에 예약(유전 반영).
  * 분열이 일어날 때마다 world.divisions를 증가 -> 진화 선택지 트리거.
@@ -13,6 +20,7 @@ export function runReproduction(world: World, _dt: number): void {
     if (!c.alive) continue;
     const def = world.species[c.species];
     if (c.divideTimer > 0) continue;
+    if (c.feed < MIN_FEED_TO_DIVIDE) continue; // 자원 부족 시 분열 억제(과증식 방지)
     if (c.energy < eff(def, c, 'divideEnergy')) continue;
 
     // 분열 비용을 먼저 소각(무한 증식 방지) 후 남은 에너지를 자식과 절반씩 나눈다.
