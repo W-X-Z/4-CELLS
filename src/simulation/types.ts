@@ -1,12 +1,11 @@
 /**
- * 환경 자원 5종 (전역 풀 방식).
+ * 환경 자원 4종 (전역 풀 방식).
  * 빛은 "항상 존재하는 배경 조건"으로 취급 — 제한 자원이 아니므로 추적하지 않는다.
- * 광합성은 CO₂가 유일한 원료 제약이 된다.
+ * 유기물은 더 이상 전역 수치가 아니다 — 죽은 세포가 남기는 "시체(Corpse)" 엔티티로 관리한다.
  */
 export const RESOURCE_KEYS = [
   'oxygen', // 산소
   'co2', // 이산화탄소
-  'organic', // 유기물
   'heat', // 열
   'toxicity', // 독성
 ] as const;
@@ -18,13 +17,41 @@ export type Resources = Record<ResourceKey, number>;
 export const RESOURCE_LABELS: Record<ResourceKey, string> = {
   oxygen: '산소',
   co2: '이산화탄소',
-  organic: '유기물',
   heat: '열',
   toxicity: '독성',
 };
 
 /** 세포 종 식별자 */
 export type SpeciesId = 'photosynth' | 'consumer' | 'predator' | 'decomposer';
+
+/**
+ * 유전자로 스케일 가능한(돌연변이 대상) 수치 필드.
+ * 돌연변이는 이 필드에 대한 곱 배율로 표현되며, 개체별로 birth 시점에 확정(freeze)된다.
+ */
+export type GeneField =
+  | 'moveSpeed'
+  | 'vision'
+  | 'energyFromIntake'
+  | 'upkeep'
+  | 'attackEnergy'
+  | 'divideEnergy'
+  | 'maxEnergy'
+  | 'lifespan'
+  | 'toxicityTolerance'
+  | 'energyFromCorpse';
+
+/**
+ * 유전자풀에 등록되는 돌연변이 하나.
+ * 선택지가 종 전체를 즉시 바꾸는 대신, 이 돌연변이를 유전자풀에 넣는다.
+ * 신생아는 rate 확률로 이 형질을 발현하며, 발현하면 자손에게 유전된다(등장률로 확산 속도 조절).
+ */
+export interface Mutation {
+  id: number; // 유전자풀 내 고유 (같은 형질을 두 번 골라도 별개로 누적)
+  species: SpeciesId;
+  field: GeneField;
+  value: number; // 곱 배율 (>0). 예: 1.3 강화, 0.8 절감.
+  rate: number; // 0..1 신생아 발현 확률(등장률)
+}
 
 /** 데이터로 정의되는 세포 종 명세 */
 export interface SpeciesDef {
@@ -35,8 +62,8 @@ export interface SpeciesDef {
   radius: number; // 시각/충돌 반경 (px)
 
   moveSpeed: number; // px/s 기준 최고 속도
-  moveMode: 'drift' | 'seekResource' | 'seekPrey'; // 이동 방식
-  vision: number; // 먹이 탐지 반경(px). 낮을수록 먹이에 피난처가 생긴다. drift 종은 미사용.
+  moveMode: 'drift' | 'seekResource' | 'seekPrey'; // 이동 방식(seekResource=시체 탐색)
+  vision: number; // 먹이/시체 탐지 반경(px). drift 종은 미사용.
 
   // 대사: 초당 자원 소비/생산 (에너지 획득 포함)
   intake: Partial<Resources>; // 풀에서 소비 (양수). 부족하면 비례 축소. 필수 원료 — 하나라도 0이면 대사 정지.
@@ -46,6 +73,10 @@ export interface SpeciesDef {
   scavenge: Partial<Resources>;
   energyFromScavenge: number; // scavenge 충족 비율에 곱해 얻는 초당 에너지
   upkeep: number; // 초당 에너지 소모(기초 대사)
+
+  // 시체 섭식: 근접한 시체에서 유기물 질량을 먹어 에너지를 얻는다(소비/분해 세포).
+  corpseAppetite: number; // 초당 먹을 수 있는 시체 질량
+  energyFromCorpse: number; // 먹은 질량 1당 얻는 에너지
 
   // 포식: seekPrey 종이 접촉 시 잡아먹는 대상
   preyOn: SpeciesId[];
@@ -60,7 +91,7 @@ export interface SpeciesDef {
   lifespan: number; // 초 (수명)
   toxicityTolerance: number; // 이 독성 이상이면 초당 피해
 
-  // 사망 시 풀로 환원되는 양
+  // 사망 시 남기는 시체의 유기물 질량 / 독성 총량
   corpseOrganic: number;
   corpseToxicity: number;
 
@@ -81,11 +112,24 @@ export interface Cell {
   alive: boolean;
   // 렌더링 피드백용 순간 이벤트 플래그 (렌더러가 소비 후 리셋)
   flash: number; // 0..1, 최근 상호작용 강조
+  // 유전: birth 시점에 확정된 형질 배율(없으면 야생형). carried는 이미 발현한 돌연변이 id.
+  genes?: Partial<Record<GeneField, number>>;
+  carried?: number[];
+}
+
+/** 죽은 세포가 남기는 유기물 덩어리. 분해/소비 세포가 근접 섭식하며, 방치되면 부패해 독성을 방출한다. */
+export interface Corpse {
+  id: number;
+  x: number;
+  y: number;
+  mass: number; // 남은 유기물 질량
+  tox: number; // 남은(부패 시 방출될) 독성 총량
+  flash: number; // 섭식 강조(렌더)
 }
 
 /** 시뮬레이션에서 발생한 순간 이벤트 (렌더러가 시각 효과용으로 소비) */
 export interface SimEvent {
-  type: 'predation';
+  type: 'predation' | 'decompose';
   x: number;
   y: number;
 }
@@ -97,6 +141,9 @@ export interface WorldSnapshot {
   resources: Resources;
   counts: Record<SpeciesId, number>;
   totalCells: number;
+  corpseCount: number;
+  corpseMass: number;
+  divisions: number;
   score: number;
   biodiversity: number;
   biomass: number;

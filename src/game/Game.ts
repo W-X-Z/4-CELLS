@@ -10,7 +10,8 @@ export type Speed = 1 | 2 | 4;
 export interface GameOptions {
   seed: number;
   config?: EnvironmentConfig;
-  choiceInterval?: number;
+  /** 누적 분열 수가 이만큼 늘 때마다 진화 선택지 제시(미지정 시 config 값) */
+  divisionsPerChoice?: number;
   /** UI 없이 자동 진행할 때 선택지를 고르는 함수(밸런스 테스트용) */
   autoChoice?: (choices: ChoiceDef[], world: World) => string | null;
 }
@@ -18,12 +19,15 @@ export interface GameOptions {
 /**
  * 시뮬레이션 루프 오케스트레이션.
  * 고정 타임스텝 + 시드 재현. 렌더링 의존성 없음 -> 헤드리스 구동 가능.
+ * 진화 트리거: 시간이 아니라 "누적 세포 분열 수". 번성해서 분열이 많을수록 더 자주 진화한다.
  */
 export class Game {
   readonly world: World;
   readonly choices: ChoiceSystem;
   readonly seed: number;
   readonly stepDt: number;
+  /** 진화 선택지 트리거: 이만큼 분열이 누적될 때마다 제시 */
+  readonly divisionsPerChoice: number;
 
   phase: GamePhase = 'running';
   speed: Speed = 1;
@@ -32,7 +36,7 @@ export class Game {
   appliedChoices: ChoiceDef[] = [];
 
   private accumulator = 0;
-  private choiceTimer = 0;
+  private lastChoiceDivisions = 0;
   private autoChoice?: GameOptions['autoChoice'];
 
   // UI 훅
@@ -44,8 +48,9 @@ export class Game {
     const cfg = opts.config ?? environmentConfig;
     this.seed = opts.seed;
     this.world = new World(opts.seed, cfg);
-    this.choices = new ChoiceSystem(this.world, opts.choiceInterval ?? 18);
+    this.choices = new ChoiceSystem(this.world);
     this.stepDt = 1 / cfg.simRate;
+    this.divisionsPerChoice = Math.max(1, opts.divisionsPerChoice ?? cfg.divisionsPerChoice);
     this.autoChoice = opts.autoChoice;
   }
 
@@ -60,7 +65,6 @@ export class Game {
     while (this.accumulator >= this.stepDt && guard < 240) {
       this.world.step(this.stepDt);
       this.accumulator -= this.stepDt;
-      this.choiceTimer += this.stepDt;
       guard++;
 
       if (this.world.gameOver) {
@@ -68,7 +72,7 @@ export class Game {
         this.onGameOver?.(this.world.snapshot());
         return;
       }
-      if (this.choiceTimer >= this.choices.interval) {
+      if (this.world.divisions - this.lastChoiceDivisions >= this.divisionsPerChoice) {
         this.offerChoices();
         return; // 선택 대기(일시정지)
       }
@@ -76,18 +80,16 @@ export class Game {
   }
 
   private offerChoices(): void {
+    // 다음 트리거 기준점을 미리 갱신(선택이 없어도 같은 프레임에 재제시되지 않도록)
+    this.lastChoiceDivisions = this.world.divisions;
     const choices = this.choices.generate(3);
-    if (choices.length === 0) {
-      this.choiceTimer = 0;
-      return;
-    }
+    if (choices.length === 0) return;
     this.pendingChoices = choices;
 
     // 헤드리스 자동 진행
     if (this.autoChoice) {
       const id = this.autoChoice(choices, this.world);
       if (id) this.resolveChoice(id);
-      else this.choiceTimer = 0;
       return;
     }
 
@@ -100,7 +102,7 @@ export class Game {
     this.choices.apply(choiceId);
     if (def) this.appliedChoices.push(def);
     this.pendingChoices = [];
-    this.choiceTimer = 0;
+    this.lastChoiceDivisions = this.world.divisions;
     if (this.phase === 'choosing') this.phase = 'running';
     if (def) this.onChoiceResolved?.(def);
   }

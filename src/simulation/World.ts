@@ -4,12 +4,15 @@ import { clamp } from '../core/math';
 import type { EnvironmentConfig } from '../data/environments';
 import { speciesDefs } from '../data/species';
 import { Environment } from './Environment';
-import type { Cell, SimEvent, SpeciesDef, SpeciesId, WorldSnapshot } from './types';
+import type { Cell, Corpse, GeneField, Mutation, SimEvent, SpeciesDef, SpeciesId, WorldSnapshot } from './types';
+import { deriveChildGenetics } from './genetics';
 import { runMovement } from './systems/Movement';
 import { runMetabolism } from './systems/Metabolism';
 import { runInteraction } from './systems/Interaction';
+import { runScavenging } from './systems/Scavenging';
 import { runReproduction } from './systems/Reproduction';
 import { runDeath } from './systems/Death';
+import { runCorpseDecay } from './systems/Corpse';
 
 const SPECIES_ORDER: SpeciesId[] = ['photosynth', 'consumer', 'predator', 'decomposer'];
 
@@ -27,15 +30,22 @@ export class World {
   readonly env: Environment;
   readonly rng: Rng;
   readonly spatial: SpatialHash;
+  readonly corpseHash: SpatialHash;
 
   cells: Cell[] = [];
-  /** 런타임 종 명세 (선택지 Effect로 변경되므로 원본을 깊은 복사) */
+  corpses: Corpse[] = [];
+  /** 런타임 종 명세 (기본값). 개체별 변이는 cell.genes로 표현되므로 여기선 야생형만 유지. */
   species: Record<SpeciesId, SpeciesDef>;
+  /** 종별 유전자풀 — 선택지가 넣은 돌연변이. 신생아가 등장률에 따라 발현. */
+  genePool: Record<SpeciesId, Mutation[]>;
 
   time = 0;
   tick = 0;
+  divisions = 0; // 누적 분열 수(진화 트리거)
   gameOver = false;
   private nextId = 1;
+  private nextCorpseId = 1;
+  private nextMutationId = 1;
   private births: Cell[] = [];
 
   /** 추세 그래프용 히스토리 (제한 길이 링) */
@@ -50,8 +60,11 @@ export class World {
     this.rng = new Rng(seed);
     this.env = new Environment(cfg);
     this.spatial = new SpatialHash(48);
+    this.corpseHash = new SpatialHash(48);
     this.species = deepCloneSpecies();
+    this.genePool = { photosynth: [], consumer: [], predator: [], decomposer: [] };
     this.seedInitialCells();
+    this.seedInitialCorpses();
     this.recordTrend();
   }
 
@@ -62,6 +75,13 @@ export class World {
       for (let i = 0; i < n; i++) {
         this.spawn(id, this.rng.range(0, this.cfg.width), this.rng.range(0, this.cfg.height), def.startEnergy);
       }
+    }
+  }
+
+  private seedInitialCorpses(): void {
+    const n = Math.round(this.cfg.initialCorpses ?? 0);
+    for (let i = 0; i < n; i++) {
+      this.spawnCorpse(this.rng.range(0, this.cfg.width), this.rng.range(0, this.cfg.height), this.rng.range(4, 8), 0);
     }
   }
 
@@ -84,22 +104,45 @@ export class World {
     return cell;
   }
 
-  /** Reproduction 시스템이 자식을 예약 (반복 중 배열 변형 방지) */
-  queueBirth(species: SpeciesId, x: number, y: number, energy: number): void {
+  /** Reproduction 시스템이 자식을 예약 (반복 중 배열 변형 방지). 부모 유전 + 유전자풀 발현 반영. */
+  queueBirth(parent: Cell, x: number, y: number, energy: number): void {
     if (this.cells.length + this.births.length >= this.cfg.maxCells) return;
+    const { genes, carried } = deriveChildGenetics(this.genePool[parent.species], parent, this.rng);
     this.births.push({
       id: this.nextId++,
-      species,
+      species: parent.species,
       x: clamp(x, 0, this.cfg.width),
       y: clamp(y, 0, this.cfg.height),
       vx: this.rng.range(-1, 1) * 4,
       vy: this.rng.range(-1, 1) * 4,
       energy,
       age: 0,
-      divideTimer: this.species[species].divideCooldown,
+      divideTimer: this.species[parent.species].divideCooldown,
       alive: true,
       flash: 0.6,
+      genes,
+      carried,
     });
+  }
+
+  /** 시체 생성 (사망/포식/초기 잔해) */
+  spawnCorpse(x: number, y: number, mass: number, tox: number): void {
+    if (mass <= 0) return;
+    this.corpses.push({
+      id: this.nextCorpseId++,
+      x: clamp(x, 0, this.cfg.width),
+      y: clamp(y, 0, this.cfg.height),
+      mass,
+      tox,
+      flash: 0,
+    });
+  }
+
+  /** 유전자풀에 돌연변이 추가 (선택지 Effect에서 호출). 같은 형질을 두 번 골라도 별개로 누적된다. */
+  addMutation(species: SpeciesId, field: GeneField, value: number, rate: number): Mutation {
+    const m: Mutation = { id: this.nextMutationId++, species, field, value, rate };
+    this.genePool[species].push(m);
+    return m;
   }
 
   step(dt: number): void {
@@ -111,6 +154,12 @@ export class World {
       const c = this.cells[i];
       this.spatial.insert(i, c.x, c.y);
     }
+    // 시체 해시 (이동/섭식 조회용)
+    this.corpseHash.clear();
+    for (let i = 0; i < this.corpses.length; i++) {
+      const co = this.corpses[i];
+      this.corpseHash.insert(i, co.x, co.y);
+    }
 
     // 2) 타이머/나이 갱신
     for (const c of this.cells) {
@@ -118,13 +167,18 @@ export class World {
       if (c.divideTimer > 0) c.divideTimer -= dt;
       if (c.flash > 0) c.flash = Math.max(0, c.flash - dt * 2);
     }
+    for (const co of this.corpses) {
+      if (co.flash > 0) co.flash = Math.max(0, co.flash - dt * 2);
+    }
 
     // 3) 시스템 파이프라인 (렌더링과 분리)
     runMovement(this, dt);
     runMetabolism(this, dt);
     runInteraction(this, dt);
+    runScavenging(this, dt);
     runReproduction(this, dt);
     runDeath(this, dt);
+    runCorpseDecay(this, dt);
 
     // 4) 환경 자연 변화
     this.env.update(dt);
@@ -136,6 +190,10 @@ export class World {
     if (this.births.length) {
       for (const b of this.births) this.cells.push(b);
       this.births.length = 0;
+    }
+    // 소진된 시체 정리
+    if (this.corpses.some((co) => co.mass <= 0.01)) {
+      this.corpses = this.corpses.filter((co) => co.mass > 0.01);
     }
 
     this.time += dt;
@@ -154,7 +212,7 @@ export class World {
 
   /**
    * 월드 경계 변경 (뷰포트 회전/리사이즈 대응).
-   * 기존 세포는 새 경계 안으로 클램프. 이후 스폰/이동은 자동으로 새 경계를 따른다.
+   * 기존 세포/시체는 새 경계 안으로 클램프.
    */
   resize(width: number, height: number): void {
     if (width === this.cfg.width && height === this.cfg.height) return;
@@ -163,6 +221,10 @@ export class World {
     for (const c of this.cells) {
       c.x = clamp(c.x, 0, width);
       c.y = clamp(c.y, 0, height);
+    }
+    for (const co of this.corpses) {
+      co.x = clamp(co.x, 0, width);
+      co.y = clamp(co.y, 0, height);
     }
   }
 
@@ -202,6 +264,8 @@ export class World {
     // 바이오매스: 총 에너지
     let biomass = 0;
     for (const c of this.cells) biomass += c.energy;
+    let corpseMass = 0;
+    for (const co of this.corpses) corpseMass += co.mass;
     // 점수: 생존시간 × (다양성 가중 + 개체수 가중)
     const score = Math.round(this.time * (1 + biodiversity) + biomass * 0.05 + total * 0.5);
     return {
@@ -210,6 +274,9 @@ export class World {
       resources: { ...this.env.resources },
       counts,
       totalCells: total,
+      corpseCount: this.corpses.length,
+      corpseMass: Math.round(corpseMass),
+      divisions: this.divisions,
       score,
       biodiversity: Math.round(biodiversity * 100) / 100,
       biomass: Math.round(biomass),

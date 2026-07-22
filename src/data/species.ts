@@ -4,12 +4,12 @@ import type { SpeciesDef } from '../simulation/types';
 /**
  * 초기 세포 4종.
  * 자원 순환 루프:
- *   광합성: 빛+CO2 소비 -> O2 생산            (에너지 획득)
- *   소비:   유기물+O2 소비 -> CO2 생산         (에너지 획득)
- *   포식:   소비세포 포식 + O2 소비 -> CO2 생산 (포식으로 에너지 획득)
- *   분해:   유기물+독성 소비 -> CO2 생산        (에너지 획득, 독성 정화)
- *   사망:   유기물+독성을 풀로 환원
- * => 광합성이 무너지면 O2 붕괴 -> 소비/포식 연쇄 사망 -> 유기물/독성 폭증 => 연쇄 붕괴.
+ *   광합성: CO₂ 소비 -> O₂ 생산                 (에너지 획득)
+ *   소비:   광합성 세포 포식 + (부족 시)시체 섭식  (에너지 획득)
+ *   포식:   소비 세포 포식                        (에너지 획득)
+ *   분해:   시체 섭식 + 독성 정화                  (에너지 획득, 독성 감소)
+ *   사망:   시체(유기물 질량 + 잠재 독성)를 남김
+ * => 광합성이 무너지면 O₂ 붕괴 -> 소비/포식 연쇄 사망 -> 시체 폭증 -> 부패 독성 => 연쇄 붕괴.
  */
 const rawSpecies: SpeciesDef[] = [
   {
@@ -21,12 +21,14 @@ const rawSpecies: SpeciesDef[] = [
     moveSpeed: 8,
     moveMode: 'drift',
     vision: 0,
-    intake: { co2: 2.2 },
+    intake: { co2: 1.8 },
     output: { oxygen: 4.5 },
     energyFromIntake: 6,
     scavenge: {},
     energyFromScavenge: 0,
     upkeep: 2,
+    corpseAppetite: 0,
+    energyFromCorpse: 0,
     preyOn: [],
     attackEnergy: 0,
     divideEnergy: 58,
@@ -50,9 +52,11 @@ const rawSpecies: SpeciesDef[] = [
     intake: {},
     output: {},
     energyFromIntake: 0,
-    scavenge: { organic: 1.2 }, // 광합성이 부족할 때 사체 유기물로 연명(기회적 잡식)
-    energyFromScavenge: 2.4,
+    scavenge: {},
+    energyFromScavenge: 0,
     upkeep: 1.4,
+    corpseAppetite: 2.5, // 광합성이 부족할 때 시체로 연명(기회적 잡식)
+    energyFromCorpse: 1.6,
     preyOn: ['photosynth'],
     attackEnergy: 16,
     divideEnergy: 52,
@@ -79,6 +83,8 @@ const rawSpecies: SpeciesDef[] = [
     scavenge: {},
     energyFromScavenge: 0,
     upkeep: 1.8,
+    corpseAppetite: 0,
+    energyFromCorpse: 0,
     preyOn: ['consumer'],
     attackEnergy: 24,
     divideEnergy: 100,
@@ -96,15 +102,17 @@ const rawSpecies: SpeciesDef[] = [
     color: 0xfacc15,
     shape: 'ring',
     radius: 4,
-    moveSpeed: 10,
-    moveMode: 'drift',
-    vision: 0,
-    intake: { organic: 1.8 },
+    moveSpeed: 16,
+    moveMode: 'seekResource', // 시체를 향해 이동
+    vision: 260,
+    intake: {},
     output: {},
-    energyFromIntake: 6,
-    scavenge: { toxicity: 4 },
+    energyFromIntake: 0,
+    scavenge: { toxicity: 4 }, // 전역 독성을 흡수해 정화(보너스 에너지)
     energyFromScavenge: 2,
-    upkeep: 1.2,
+    upkeep: 0.9,
+    corpseAppetite: 5, // 시체를 먹어 유기물을 순환 — 방치 부패(독성)를 막는 청소부
+    energyFromCorpse: 2.2,
     preyOn: [],
     attackEnergy: 0,
     divideEnergy: 62,

@@ -1,5 +1,5 @@
 import type { Effect } from '../rules/types';
-import { RESOURCE_LABELS, type ResourceKey } from '../simulation/types';
+import type { GeneField } from '../simulation/types';
 import { speciesById } from '../data/species';
 
 /**
@@ -18,7 +18,7 @@ export class FeedbackLayer {
   /** 선택지 적용 시 각 Effect를 사람이 읽을 수 있는 토스트로 표출 */
   showEffects(title: string, effects: Effect[]): void {
     const lines = effects.map(describeEffect).filter(Boolean);
-    this.toast(`✔ ${title}`, lines);
+    this.toast(`🧬 ${title}`, lines);
   }
 
   private toast(header: string, lines: string[]): void {
@@ -32,41 +32,31 @@ export class FeedbackLayer {
   }
 }
 
-function sign(v: number): string {
-  return v >= 0 ? `+${v}` : `${v}`;
-}
-
-/** 종 능력치 필드의 한글 라벨 */
-const FIELD_LABELS: Record<string, string> = {
+/** 유전 형질(GeneField) 한글 라벨 */
+export const GENE_LABELS: Record<GeneField, string> = {
   moveSpeed: '이동속도',
-  radius: '크기',
-  energyFromIntake: '에너지 효율',
+  vision: '시야',
+  energyFromIntake: '광합성 효율',
   upkeep: '기초대사',
   attackEnergy: '포식 에너지',
   divideEnergy: '분열 에너지',
-  divideCooldown: '분열 쿨다운',
   maxEnergy: '최대 에너지',
   lifespan: '수명',
   toxicityTolerance: '독성 내성',
+  energyFromCorpse: '시체 섭취 효율',
 };
 
-/** Effect를 사람이 읽을 수 있는 한 줄 텍스트로 변환 (토스트/도움말 모달 공용) */
+/** 배율(1.0 기준)을 "+35% / -25%" 로 */
+export function mulLabel(value: number): string {
+  const pct = Math.round((value - 1) * 100);
+  return pct >= 0 ? `+${pct}%` : `${pct}%`;
+}
+
+/** Effect를 사람이 읽을 수 있는 한 줄 텍스트로 변환 (토스트 공용) */
 export function describeEffect(e: Effect): string {
   switch (e.kind) {
-    case 'resource':
-      return `${RESOURCE_LABELS[e.key as ResourceKey]} ${e.op === 'mul' ? `×${e.value}` : sign(e.value)}`;
-    case 'resourceRegen':
-      return `${RESOURCE_LABELS[e.key as ResourceKey]} 회복량 ${e.op === 'mul' ? `×${e.value}` : sign(e.value)}/s`;
-    case 'species':
-      return `${speciesById[e.species]?.name} ${FIELD_LABELS[e.field] ?? e.field} ${e.op === 'mul' ? `×${e.value}` : sign(e.value)}`;
-    case 'metabolism':
-      return `${speciesById[e.species]?.name} ${e.io === 'intake' ? '소비' : '생산'} ${RESOURCE_LABELS[e.key as ResourceKey]} ${e.op === 'mul' ? `×${e.value}` : sign(e.value)}`;
-    case 'moveMode':
-      return `${speciesById[e.species]?.name} 이동방식 → ${e.value}`;
-    case 'predation':
-      return `${speciesById[e.species]?.name} ${e.op === 'add' ? '포식 대상 추가' : '포식 중단'}: ${speciesById[e.target]?.name}`;
-    case 'spawn':
-      return `${speciesById[e.species]?.name} +${e.count} 투입`;
+    case 'mutation':
+      return `${speciesById[e.species]?.name} ${GENE_LABELS[e.field]} ${mulLabel(e.value)} · 등장률 ${Math.round(e.rate * 100)}%`;
     default:
       return '';
   }
