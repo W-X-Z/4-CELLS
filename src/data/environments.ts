@@ -48,7 +48,7 @@ export const environmentConfig: EnvironmentConfig = environmentSchema.parse({
     oxygen: 1200,
     co2: 1200,
     heat: 1000,
-    toxicity: 800,
+    toxicity: 150,
   },
 
   ambientHeat: 200,
@@ -63,7 +63,7 @@ export const environmentConfig: EnvironmentConfig = environmentSchema.parse({
   co2Atmosphere: 500,
   atmExchange: 0,
 
-  initialCorpses: 45, // 시작 잔해: 분해/소비 세포가 초반에 굶지 않도록
+  initialCorpses: 0, // 시작 시 시체 없음 — 시체는 세포가 죽어야 생긴다(분해 세포는 초기 사망으로 공급)
 
   // 적은 수로 시작해 키워나간다. 진화는 처음엔 자주, 갈수록 뜸하게(점진적 간격).
   divisionsPerChoice: 40, // 첫 진화까지 40회 분열

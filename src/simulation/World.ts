@@ -100,6 +100,7 @@ export class World {
       eatTimer: 0,
       feed: 1,
       alive: true,
+      sick: false,
       gen: 0,
       jitter: this.rng.range(0.88, 1.12),
       flash: 0,
@@ -125,6 +126,7 @@ export class World {
       eatTimer: this.species[parent.species].eatCooldown,
       feed: 1,
       alive: true,
+      sick: false,
       gen: parent.gen + 1,
       jitter: this.rng.range(0.88, 1.12), // 개체마다 새로 뽑아 형제도 조금씩 다르게(동기화 완화)
       flash: 0.6,

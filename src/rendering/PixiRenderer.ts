@@ -20,6 +20,7 @@ const TEX_RADIUS = 16; // 텍스처 기준 반경(스프라이트에서 축소)
 const VIEW_PAD = 8; // 캔버스 가장자리 여백(px) — 경계 세포 잘림 방지에 충분한 최소값(여백 최소화)
 const CORPSE_TINT = 0x6b5a45; // 시체(유기물) 색
 const HALO_TINT = 0xffffff; // 돌연변이 개체 강조 링
+const SICK_TINT = 0xc084fc; // 병든(감염) 세포 색 — 보라색(독성과 동일 계열)
 
 /**
  * PixiJS 렌더러. 시뮬레이션 상태를 읽어 스프라이트로 그리기만 한다(단방향).
@@ -412,7 +413,7 @@ export class PixiRenderer {
       }
       sp.visible = true;
       sp.texture = this.textures[c.species];
-      sp.tint = def.color;
+      sp.tint = c.sick ? SICK_TINT : def.color; // 병든 세포는 보라색으로 표시
       sp.x = c.x;
       sp.y = c.y;
       const flash = this.quality.flashEffects ? c.flash : 0;

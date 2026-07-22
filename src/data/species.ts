@@ -37,7 +37,7 @@ const rawSpecies: SpeciesDef[] = [
     divideCost: 12, // 분열마다 에너지 소각 → CO₂(광합성 원료)가 마르면 분열도 멈춘다
     divideCooldown: 5,
     maxEnergy: 100,
-    toxicityTolerance: 400,
+    toxicityTolerance: 70, // 실제 독성 규모(~40~90)에 맞춤 — 독성이 오르면 감염 시작
     corpseOrganic: 6,
     corpseToxicity: 1,
     startEnergy: 30,
@@ -67,7 +67,7 @@ const rawSpecies: SpeciesDef[] = [
     divideCost: 6,
     divideCooldown: 6,
     maxEnergy: 110,
-    toxicityTolerance: 350,
+    toxicityTolerance: 65,
     corpseOrganic: 7,
     corpseToxicity: 2,
     startEnergy: 45,
@@ -97,7 +97,7 @@ const rawSpecies: SpeciesDef[] = [
     divideCost: 10,
     divideCooldown: 14,
     maxEnergy: 120,
-    toxicityTolerance: 300,
+    toxicityTolerance: 55, // 내성이 낮아 오염에 가장 먼저 병든다
     corpseOrganic: 9,
     corpseToxicity: 3,
     startEnergy: 55,
@@ -127,7 +127,7 @@ const rawSpecies: SpeciesDef[] = [
     divideCost: 10,
     divideCooldown: 7,
     maxEnergy: 90,
-    toxicityTolerance: 800,
+    toxicityTolerance: 140, // 오물 속에서 일하는 분해 세포는 독성에 강함
     corpseOrganic: 4,
     corpseToxicity: 0,
     startEnergy: 25,

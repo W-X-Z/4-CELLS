@@ -71,15 +71,13 @@ html, body {
 .hud-time b { color: var(--text); font-size: 17px; font-variant-numeric: tabular-nums; }
 .controls { display: flex; gap: 6px; }
 
-/* ── 환경 자원 카드 (탭 → 도움말) ── */
+/* ── 환경 자원 카드 (탭 → 도움말) — 동일 너비 그리드(등락표시 없음) ── */
 .res-cards {
-  display: flex; gap: 6px; padding: 0 10px 8px;
-  overflow-x: auto; scrollbar-width: none;
-  touch-action: pan-x;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+  padding: 0 10px 8px;
 }
-.res-cards::-webkit-scrollbar { display: none; }
 .res-card {
-  flex: 1 0 auto; min-width: 74px;
+  width: 100%;
   background: var(--panel);
   border: 1px solid var(--line); border-radius: 10px;
   padding: 5px 9px; text-align: left; cursor: pointer; color: var(--text); font: inherit;
@@ -95,9 +93,6 @@ html, body {
 .res-card-name { font-size: 10px; color: var(--muted); letter-spacing: 0.3px; white-space: nowrap; }
 .res-card-body { display: flex; align-items: baseline; gap: 4px; }
 .res-card-val { font-size: 15px; font-variant-numeric: tabular-nums; }
-.res-card-delta { font-size: 9px; }
-.res-card-delta.up { color: #4ade80; }
-.res-card-delta.down { color: #f87171; }
 
 /* ── 하단 세포 바 (동일 너비 그리드) ── */
 .sp-bar {
@@ -217,7 +212,8 @@ html, body {
 
 /* ── 모바일/세로 ── */
 @media (max-width: 720px) {
-  .res-card { min-width: 66px; padding: 4px 8px; }
+  .res-card { padding: 4px 6px; }
+  .res-card-name { font-size: 9px; }
   .res-card-val { font-size: 14px; }
   /* 하단 세포 바: 2×2 배치, 버튼 동일 너비 */
   .sp-bar { grid-template-columns: repeat(2, 1fr); }
