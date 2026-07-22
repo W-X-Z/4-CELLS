@@ -5,12 +5,15 @@ import { ChoicePanel } from './ui/ChoicePanel';
 import { GameOverPanel } from './ui/GameOverPanel';
 import { FeedbackLayer } from './ui/FeedbackLayer';
 import { InfoModal } from './ui/InfoModal';
+import { EnvModal } from './ui/EnvModal';
 import { computeWorldSize, detectQuality } from './core/device';
 import { environmentConfig } from './data/environments';
 import { choiceDefs } from './data/choices';
 
 const canvas = document.getElementById('stage') as HTMLCanvasElement;
 const uiRoot = document.getElementById('ui-root') as HTMLElement;
+const hudTop = document.getElementById('hud-top') as HTMLElement;
+const hudBottom = document.getElementById('hud-bottom') as HTMLElement;
 
 // 시드: URL ?seed= 로 재현 가능. 없으면 생성 후 URL에 기록.
 const params = new URLSearchParams(location.search);
@@ -56,15 +59,26 @@ async function bootstrap(): Promise<void> {
 
   // 모달을 닫으면 (열기 전에 돌아가고 있었다면) 재개
   let resumeOnModalClose = false;
-  const infoModal = new InfoModal(uiRoot, () => {
+  const onModalClose = (): void => {
     if (resumeOnModalClose && game.phase === 'paused') {
       game.togglePause();
       hud.setPaused(false);
     }
     resumeOnModalClose = false;
-  });
+  };
+  const infoModal = new InfoModal(uiRoot, onModalClose);
+  const envModal = new EnvModal(uiRoot, onModalClose);
 
-  const hud = new HUD(uiRoot, {
+  // 도움말을 열 때: 실행 중이면 멈추고, 닫을 때 재개하도록 표시
+  const pauseForModal = (): void => {
+    resumeOnModalClose = game.phase === 'running';
+    if (game.phase === 'running') {
+      game.togglePause();
+      hud.setPaused(true);
+    }
+  };
+
+  const hud = new HUD(hudTop, hudBottom, {
     onSpeed: (s: Speed) => game.setSpeed(s),
     onPause: () => {
       game.togglePause();
@@ -72,13 +86,13 @@ async function bootstrap(): Promise<void> {
     },
     onSpeciesClick: (id) => {
       if (game.phase === 'choosing' || game.phase === 'gameover') return;
-      // 세포 도움말: 시뮬레이션을 멈추고 모달 표시
-      resumeOnModalClose = game.phase === 'running';
-      if (game.phase === 'running') {
-        game.togglePause();
-        hud.setPaused(true);
-      }
+      pauseForModal();
       infoModal.show(id, game.world);
+    },
+    onEnvClick: (key) => {
+      if (game.phase === 'choosing' || game.phase === 'gameover') return;
+      pauseForModal();
+      envModal.show(key, game.world);
     },
   });
 
@@ -112,10 +126,11 @@ async function bootstrap(): Promise<void> {
 
   // ── 입력 ──
   window.addEventListener('keydown', (e) => {
-    if (infoModal.visible) {
+    if (infoModal.visible || envModal.visible) {
       if (e.key === 'Escape' || e.key === ' ') {
         e.preventDefault();
         infoModal.hide();
+        envModal.hide();
       }
       return;
     }

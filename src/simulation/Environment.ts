@@ -23,9 +23,9 @@ export class Environment {
     r.heat = damp(r.heat, this.cfg.ambientHeat, this.cfg.heatDissipation, dt);
     // 독성 자연 감쇠
     r.toxicity -= this.cfg.toxicityDecay * dt;
-    // 하한 0, 상한 = 표시 상한(풀은 유한한 저수지 -> 폭주 방지)
+    // 하한만 0으로 고정(상한 없음 — 실제 축적을 그대로 반영). displayCaps는 HUD 위험표시용.
     for (const key of RESOURCE_KEYS) {
-      r[key] = Math.max(0, Math.min(r[key], this.cfg.displayCaps[key]));
+      if (r[key] < 0) r[key] = 0;
     }
   }
 
