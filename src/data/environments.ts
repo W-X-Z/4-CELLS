@@ -64,19 +64,19 @@ export const environmentConfig: EnvironmentConfig = environmentSchema.parse({
   co2Atmosphere: 500,
   atmExchange: 0,
 
-  // 초기 세포를 가운데 영역에 모아 서로 쉽게 만나게 한다(넓게 흩어져 굶던 문제 완화).
-  // 너무 좁으면 소비 세포가 광합성 무리를 순식간에 먹어치워 오히려 빨리 붕괴 → 0.55가 생존이 가장 길다.
-  initialSpawnSpread: 0.55,
+  // 적은 초기 세포를 가운데에 바짝 모아 서로 쉽게 만나게 한다(줌인 배율과 맞춤).
+  initialSpawnSpread: 0.4,
   initialCorpses: 0, // 시작 시 시체 없음 — 시체는 세포가 죽어야 생긴다(분해 세포는 초기 사망으로 공급)
 
   // 적은 수로 시작해 키워나간다. 진화는 처음엔 자주, 갈수록 뜸하게(점진적 간격).
   divisionsPerChoice: 40, // 첫 진화까지 40회 분열
   divisionsGrowth: 30, // 이후 진화마다 필요한 분열 간격이 +30씩 늘어남
 
+  // 적은 수로 가운데에서 시작해 키운다.
   initialCounts: {
-    photosynth: 34,
-    consumer: 9,
+    photosynth: 8,
+    consumer: 3,
     predator: 2,
-    decomposer: 8,
+    decomposer: 1,
   },
 }) as EnvironmentConfig;
