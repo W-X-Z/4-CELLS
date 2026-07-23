@@ -85,15 +85,18 @@ async function bootstrap(): Promise<void> {
   // ── 개체 선택(탭): 재생 중에도 캔버스의 세포를 탭해 상태를 실시간으로 본다(패널은 뒤가 보이는 비차단형) ──
   // cell-panel을 큰 모달들보다 먼저 만들어 DOM 순서상 아래에 두면, 도움말/선택지 오버레이가 위를 덮는다.
   const clearSelection = (): void => {
-    cellModal.hide();
-    renderer.setSelected(null);
+    cellModal.hide(); // hide가 onClose를 호출해 강조 해제 + 재개까지 처리
   };
-  const cellModal = new CellModal(uiRoot, clearSelection);
+  const cellModal = new CellModal(uiRoot, () => {
+    renderer.setSelected(null);
+    onModalClose(); // 개체 조회를 닫으면 (다른 상세 뷰가 없을 때) 게임 재개
+  });
   renderer.onTap = (clientX, clientY) => {
     if (game.phase === 'choosing' || game.phase === 'gameover') return; // 선택지/게임오버 중엔 무시
     const { x, y } = renderer.screenToWorld(clientX, clientY);
     const cell = pickCell(game.world, x, y);
     if (cell) {
+      pauseForModal(); // 개체를 모달로 조회할 때는 게임을 일시정지
       renderer.setSelected(cell);
       cellModal.show(cell, game.world);
     } else {
@@ -101,9 +104,14 @@ async function bootstrap(): Promise<void> {
     }
   };
 
-  // 모달을 닫으면 (열기 전에 돌아가고 있었다면) 재개
+  // 상세 뷰(개체·세포·환경·도움말) 중 하나라도 열려 있는지
+  const anyDetailOpen = (): boolean =>
+    infoModal.visible || envModal.visible || helpModal.visible || cellModal.visible;
+
+  // 모달을 닫으면 (열기 전에 돌아가고 있었고, 다른 상세 뷰가 남아 있지 않으면) 재개
   let resumeOnModalClose = false;
   const onModalClose = (): void => {
+    if (anyDetailOpen()) return; // 다른 상세 뷰가 아직 열려 있으면 재개하지 않음
     if (resumeOnModalClose && game.phase === 'paused') {
       game.togglePause();
       hud.setPaused(false);
@@ -127,10 +135,11 @@ async function bootstrap(): Promise<void> {
   const envModal = new EnvModal(uiRoot, onModalClose);
   const helpModal = new HelpModal(uiRoot, onModalClose);
 
-  // 도움말/정보 모달을 열 때: 실행 중이면 멈추고, 닫을 때 재개하도록 표시
+  // 상세 뷰를 열 때: 실행 중이면 멈추고 재개 플래그를 세운다.
+  // 이미 (다른 상세 뷰로) 멈춰 있으면 플래그를 덮어쓰지 않아, 상세 뷰를 연달아 열어도 재개 상태가 유지된다.
   const pauseForModal = (): void => {
-    resumeOnModalClose = game.phase === 'running';
     if (game.phase === 'running') {
+      resumeOnModalClose = true;
       game.togglePause();
       hud.setPaused(true);
     }
