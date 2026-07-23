@@ -61,7 +61,9 @@ export class PixiRenderer {
   private frame = 0;
 
   // ── 카메라(팬/줌) ──
-  private camZoom = 1; // 1 = 월드 전체가 화면에 맞는 기본 배율. 최대 6배까지 확대.
+  // 시작 시 가운데를 확대해 밀집된 초기 세포들이 잘 보이게 한다(더블클릭/축소로 전체 보기).
+  // 1.8× ≈ 화면에 월드 가운데 ~55%가 보임 → 초기 배치 영역(spread)과 맞물린다.
+  private camZoom = 1.8; // 1 = 월드 전체가 화면에 맞는 기본 배율. 최대 6배까지 확대.
   private camPanX = 0; // 화면 px 단위 팬 오프셋
   private camPanY = 0;
 

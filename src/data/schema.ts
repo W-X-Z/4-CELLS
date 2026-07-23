@@ -58,6 +58,9 @@ export const environmentSchema = z.object({
   o2Atmosphere: z.number().nonnegative().default(0),
   co2Atmosphere: z.number().nonnegative().default(0),
   atmExchange: z.number().nonnegative().default(0),
+  // 초기 세포를 월드 전체가 아니라 가운데 영역에만 배치하는 비율(0~1, 폭·높이에 대한 분율).
+  // 작을수록 가운데에 밀집 → 초반 세포들이 서로를 쉽게 찾아 생태계가 덜 쉽게 붕괴한다.
+  initialSpawnSpread: z.number().positive().max(1).default(0.4),
   // 시체 시스템
   initialCorpses: z.number().nonnegative().default(0),
   // 진화 페이싱: 첫 진화까지의 분열 수 + 진화마다 늘어나는 간격

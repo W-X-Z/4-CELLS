@@ -19,6 +19,7 @@ export interface EnvironmentConfig {
   o2Atmosphere: number;
   co2Atmosphere: number;
   atmExchange: number; // 기준값으로 수렴하는 속도(0~1, 클수록 빠름)
+  initialSpawnSpread: number; // 초기 세포를 가운데 영역에만 배치하는 비율(0~1)
   // 시체 시스템
   initialCorpses: number; // 시작 시 흩뿌리는 잔해(분해자 부트스트랩용)
   // 진화 페이싱 (점진적으로 간격이 늘어남)
@@ -63,6 +64,9 @@ export const environmentConfig: EnvironmentConfig = environmentSchema.parse({
   co2Atmosphere: 500,
   atmExchange: 0,
 
+  // 초기 세포를 가운데 영역에 모아 서로 쉽게 만나게 한다(넓게 흩어져 굶던 문제 완화).
+  // 너무 좁으면 소비 세포가 광합성 무리를 순식간에 먹어치워 오히려 빨리 붕괴 → 0.55가 생존이 가장 길다.
+  initialSpawnSpread: 0.55,
   initialCorpses: 0, // 시작 시 시체 없음 — 시체는 세포가 죽어야 생긴다(분해 세포는 초기 사망으로 공급)
 
   // 적은 수로 시작해 키워나간다. 진화는 처음엔 자주, 갈수록 뜸하게(점진적 간격).
