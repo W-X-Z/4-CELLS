@@ -266,9 +266,8 @@ html, body {
   .sp-chip-name { display: inline; }
   .choice-card { width: 88vw; min-height: auto; }
   .choice-grid { gap: 10px; }
-  /* 하단 세포 바와 겹치지 않도록 선택지 팝업을 위로 올린다 */
-  .choice-overlay { gap: 12px; padding-bottom: 120px; }
-  .feedback-layer { bottom: 12px; right: 10px; }
+  /* 선택 완료 토스트가 하단 세포 바(모바일 2×2 → 높음)와 겹치지 않도록 위로 올린다 */
+  .feedback-layer { bottom: calc(122px + env(safe-area-inset-bottom)); right: 10px; }
   .cell-panel .modal-card { left: 8px; right: 8px; width: auto; bottom: 96px; max-height: 42vh; }
   .start-title { font-size: 32px; }
 }
