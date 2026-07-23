@@ -63,7 +63,7 @@ const rawSpecies: SpeciesDef[] = [
     preyOn: ['photosynth'],
     attackEnergy: 22, // 포식 1회당 에너지↑ → 번식 여유
     eatCooldown: 3.5, // 소화 시간(배부름)↑ — 분열 직후 광합성 세포를 급속히 뜯어먹지 않도록
-    divideEnergy: 52, // 분열 문턱↑ — 폭발적 증식으로 광합성 세포를 순식간에 절멸시키는 것을 완화
+    divideEnergy: 38, // 적은 초기 수(3)에서 빨리 번식해 포식 압력 전에 개체군을 세우도록 하향
     divideCost: 6,
     divideCooldown: 6,
     maxEnergy: 110,
@@ -78,9 +78,9 @@ const rawSpecies: SpeciesDef[] = [
     color: 0xf87171,
     shape: 'triangle',
     radius: 5,
-    moveSpeed: 32,
+    moveSpeed: 28, // 시야·속도를 낮춰 소비 세포에 공간적 피난처를 준다(적은 수의 소비 세포 조기 절멸 방지)
     moveMode: 'seekPrey',
-    vision: 240, // 시야를 낮춰 소비 세포에 공간적 피난처를 준다(과도한 절멸 방지)
+    vision: 160, // 시야를 크게 낮춰 소비 세포가 초반에 숨을 여지를 준다(돌연변이 '매의 눈'으로 회복 가능)
     intake: {},
     output: {},
     energyFromIntake: 0,
@@ -93,7 +93,7 @@ const rawSpecies: SpeciesDef[] = [
     preyOn: ['consumer'],
     attackEnergy: 24,
     eatCooldown: 6.0, // 소화가 오래 걸림 → 소비 세포를 과도하게 사냥해 절멸시키지 않도록(쿨↑)
-    divideEnergy: 88, // 도달 가능한 문턱(에너지는 ~108에서 포화) — 110은 절대 못 넘어 분열 불가였음
+    divideEnergy: 72, // 느린 사냥으로도 도달 가능하게 하향 — 먹이를 잡으면 이따금 번식
     divideCost: 10,
     divideCooldown: 14,
     maxEnergy: 120,

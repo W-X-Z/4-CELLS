@@ -69,11 +69,17 @@ export class World {
   }
 
   private seedInitialCells(): void {
+    // 초기 세포는 월드 전체가 아니라 가운데 영역에만 배치한다(밀집 → 서로 쉽게 만남).
+    const spread = this.cfg.initialSpawnSpread ?? 1;
+    const cx = this.cfg.width / 2;
+    const cy = this.cfg.height / 2;
+    const halfW = (this.cfg.width * spread) / 2;
+    const halfH = (this.cfg.height * spread) / 2;
     for (const id of SPECIES_ORDER) {
       const n = Math.round(this.cfg.initialCounts[id] ?? 0);
       const def = this.species[id];
       for (let i = 0; i < n; i++) {
-        this.spawn(id, this.rng.range(0, this.cfg.width), this.rng.range(0, this.cfg.height), def.startEnergy);
+        this.spawn(id, cx + this.rng.range(-halfW, halfW), cy + this.rng.range(-halfH, halfH), def.startEnergy);
       }
     }
   }
