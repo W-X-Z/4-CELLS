@@ -204,8 +204,47 @@ html, body {
 .gameover-stats b { font-size: 20px; }
 .btn-restart { width: 100%; background: var(--accent); color: #04121f; border: none; font-size: 16px; padding: 12px; }
 
-/* ── 피드백 토스트 ── */
-.feedback-layer { position: absolute; right: 14px; bottom: 74px; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+/* ── 시작 화면 ── */
+.start-screen {
+  position: absolute; inset: 0; pointer-events: auto;
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+  background: radial-gradient(circle at 50% 32%, #142033 0%, #06101a 78%);
+}
+.start-screen.hidden { display: none; }
+.start-card { text-align: center; max-width: 420px; }
+.start-logo { font-size: 60px; line-height: 1; }
+.start-title { font-size: 38px; font-weight: 800; letter-spacing: 5px; margin: 8px 0 4px; }
+.start-sub { color: var(--muted); font-size: 15px; line-height: 1.6; margin-bottom: 26px; }
+.start-actions { display: flex; flex-direction: column; gap: 12px; align-items: center; }
+.start-primary { background: var(--accent); color: #04121f; border: none; font-size: 18px; font-weight: 700; padding: 14px 40px; min-width: 220px; }
+.start-secondary { font-size: 16px; padding: 12px 40px; min-width: 220px; }
+
+/* ── 도움말 아이콘 목록 ── */
+.help-list { display: flex; flex-direction: column; gap: 9px; }
+.help-row { display: flex; align-items: center; gap: 12px; }
+.help-icon { font-size: 19px; width: 26px; text-align: center; flex: none; }
+.help-text { display: flex; flex-direction: column; }
+.help-text b { font-size: 14px; }
+.help-text span { font-size: 12px; color: var(--muted); }
+
+/* ── 세포 추가 CTA (하단 세포 모달) ── */
+.modal-add {
+  background: var(--sp-color, var(--accent)); color: #04121f; border: none;
+  font-weight: 700; font-size: 13px; padding: 6px 12px; min-height: 36px; white-space: nowrap;
+}
+.modal-add:hover { filter: brightness(1.08); border: none; }
+
+/* ── 개체 상세 패널 (비차단형 — 재생 중에도 뒤 생태계가 보인다) ── */
+.cell-panel { position: absolute; inset: 0; pointer-events: none; }
+.cell-panel.hidden { display: none; }
+.cell-panel .modal-card {
+  position: absolute; left: 12px; bottom: 84px;
+  width: 300px; max-width: calc(100% - 24px); max-height: 52vh;
+  overflow-y: auto; pointer-events: auto;
+}
+
+/* ── 피드백 토스트 (모달 위에도 보이도록 최상단) ── */
+.feedback-layer { position: absolute; right: 14px; bottom: 74px; z-index: 40; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
 .toast {
   background: var(--panel-solid); border: 1px solid var(--line); border-left: 3px solid var(--accent);
   border-radius: 10px; padding: 8px 12px; min-width: 180px; max-width: 260px;
@@ -227,5 +266,9 @@ html, body {
   .sp-chip-name { display: inline; }
   .choice-card { width: 88vw; min-height: auto; }
   .choice-grid { gap: 10px; }
+  /* 하단 세포 바와 겹치지 않도록 선택지 팝업을 위로 올린다 */
+  .choice-overlay { gap: 12px; padding-bottom: 120px; }
   .feedback-layer { bottom: 12px; right: 10px; }
+  .cell-panel .modal-card { left: 8px; right: 8px; width: auto; bottom: 96px; max-height: 42vh; }
+  .start-title { font-size: 32px; }
 }

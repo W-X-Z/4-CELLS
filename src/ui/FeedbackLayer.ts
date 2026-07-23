@@ -21,6 +21,11 @@ export class FeedbackLayer {
     this.toast(`🧬 ${title}`, lines);
   }
 
+  /** 범용 토스트 (세포 추가 등 알림용) */
+  notify(header: string, line?: string): void {
+    this.toast(header, line ? [line] : []);
+  }
+
   private toast(header: string, lines: string[]): void {
     const t = document.createElement('div');
     t.className = 'toast';

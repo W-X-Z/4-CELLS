@@ -47,6 +47,8 @@ export class InfoModal {
   constructor(
     private root: HTMLElement,
     private onClose: () => void,
+    /** 세포 추가 CTA — 해당 종을 스폰(추후 광고 보상 연동 지점). */
+    private onAddCells?: (id: SpeciesId) => void,
   ) {
     this.el = document.createElement('div');
     this.el.className = 'modal-overlay hidden';
@@ -99,6 +101,7 @@ export class InfoModal {
         <div class="modal-head">
           <span class="modal-glyph" style="color:${color}">${glyph}</span>
           <div class="modal-title">${def.name}</div>
+          ${this.onAddCells ? `<button class="btn modal-add" style="--sp-color:${color}">➕ 세포 추가</button>` : ''}
           <button class="btn modal-close">✕</button>
         </div>
         <p class="modal-role">${ROLE_TEXT[id]}</p>
@@ -129,6 +132,13 @@ export class InfoModal {
       </div>`;
 
     this.el.querySelector<HTMLButtonElement>('.modal-close')!.onclick = () => this.hide();
+    const addBtn = this.el.querySelector<HTMLButtonElement>('.modal-add');
+    if (addBtn && this.onAddCells) {
+      addBtn.onclick = () => {
+        this.onAddCells!(id);
+        this.show(id, world); // 개체수 표시 갱신
+      };
+    }
     this.el.classList.remove('hidden');
     this.visible = true;
   }
