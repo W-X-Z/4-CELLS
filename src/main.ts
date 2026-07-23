@@ -7,7 +7,9 @@ import { FeedbackLayer } from './ui/FeedbackLayer';
 import { InfoModal } from './ui/InfoModal';
 import { EnvModal } from './ui/EnvModal';
 import { CellModal } from './ui/CellModal';
-import type { Cell } from './simulation/types';
+import { HelpModal } from './ui/HelpModal';
+import { StartScreen } from './ui/StartScreen';
+import type { Cell, SpeciesId } from './simulation/types';
 import { computeWorldSize, detectQuality } from './core/device';
 import { environmentConfig } from './data/environments';
 import { choiceDefs } from './data/choices';
@@ -69,27 +71,26 @@ async function bootstrap(): Promise<void> {
 
   const feedback = new FeedbackLayer(uiRoot);
 
-  // 모달을 닫으면 (열기 전에 돌아가고 있었다면) 재개
-  let resumeOnModalClose = false;
-  const onModalClose = (): void => {
-    if (resumeOnModalClose && game.phase === 'paused') {
-      game.togglePause();
-      hud.setPaused(false);
-    }
-    resumeOnModalClose = false;
-  };
-  const infoModal = new InfoModal(uiRoot, onModalClose);
-  const envModal = new EnvModal(uiRoot, onModalClose);
+  // 시작 화면을 먼저(DOM 아래에) 만들어, 나중에 만드는 도움말 모달이 그 위에 뜨도록 한다.
+  const startScreen = new StartScreen(uiRoot, {
+    onStart: () => {
+      if (game.phase === 'paused') {
+        game.togglePause();
+        hud.setPaused(false);
+      }
+    },
+    onHelp: () => helpModal.show(),
+  });
 
-  // 개체 선택: 일시정지 중 캔버스의 세포를 탭하면 상세 모달. 닫으면 강조 링 해제.
-  const cellModal = new CellModal(uiRoot, () => renderer.setSelected(null));
+  // ── 개체 선택(탭): 재생 중에도 캔버스의 세포를 탭해 상태를 실시간으로 본다(패널은 뒤가 보이는 비차단형) ──
+  // cell-panel을 큰 모달들보다 먼저 만들어 DOM 순서상 아래에 두면, 도움말/선택지 오버레이가 위를 덮는다.
   const clearSelection = (): void => {
     cellModal.hide();
     renderer.setSelected(null);
   };
+  const cellModal = new CellModal(uiRoot, clearSelection);
   renderer.onTap = (clientX, clientY) => {
-    // 일시정지 상태에서만 선택(플레이 중 탭은 무시 → 팬/줌 흐름 방해 안 함).
-    if (game.phase !== 'paused') return;
+    if (game.phase === 'choosing' || game.phase === 'gameover') return; // 선택지/게임오버 중엔 무시
     const { x, y } = renderer.screenToWorld(clientX, clientY);
     const cell = pickCell(game.world, x, y);
     if (cell) {
@@ -100,7 +101,33 @@ async function bootstrap(): Promise<void> {
     }
   };
 
-  // 도움말을 열 때: 실행 중이면 멈추고, 닫을 때 재개하도록 표시
+  // 모달을 닫으면 (열기 전에 돌아가고 있었다면) 재개
+  let resumeOnModalClose = false;
+  const onModalClose = (): void => {
+    if (resumeOnModalClose && game.phase === 'paused') {
+      game.togglePause();
+      hud.setPaused(false);
+    }
+    resumeOnModalClose = false;
+  };
+
+  // 세포 추가 CTA (하단 세포 도움말 모달에서 호출 — 추후 광고 보상 연동 지점)
+  const ADD_COUNT = 5;
+  const addCells = (id: SpeciesId): void => {
+    const def = game.world.species[id];
+    let added = 0;
+    for (let i = 0; i < ADD_COUNT; i++) {
+      const c = game.world.spawn(id, game.world.rng.range(0, game.world.cfg.width), game.world.rng.range(0, game.world.cfg.height), def.startEnergy);
+      if (c) added++;
+    }
+    feedback.notify(`➕ ${def.name} +${added}`, added < ADD_COUNT ? '개체 상한에 도달했습니다' : `${added}마리를 생태계에 추가했습니다`);
+  };
+
+  const infoModal = new InfoModal(uiRoot, onModalClose, addCells);
+  const envModal = new EnvModal(uiRoot, onModalClose);
+  const helpModal = new HelpModal(uiRoot, onModalClose);
+
+  // 도움말/정보 모달을 열 때: 실행 중이면 멈추고, 닫을 때 재개하도록 표시
   const pauseForModal = (): void => {
     resumeOnModalClose = game.phase === 'running';
     if (game.phase === 'running') {
@@ -113,9 +140,7 @@ async function bootstrap(): Promise<void> {
     onSpeed: (s: Speed) => game.setSpeed(s),
     onPause: () => {
       game.togglePause();
-      const paused = game.phase === 'paused';
-      hud.setPaused(paused);
-      if (!paused) clearSelection(); // 재개하면 선택 해제
+      hud.setPaused(game.phase === 'paused');
     },
     onSpeciesClick: (id) => {
       if (game.phase === 'choosing' || game.phase === 'gameover') return;
@@ -126,6 +151,11 @@ async function bootstrap(): Promise<void> {
       if (game.phase === 'choosing' || game.phase === 'gameover') return;
       pauseForModal();
       envModal.show(key, game.world);
+    },
+    onHelp: () => {
+      if (game.phase === 'choosing' || game.phase === 'gameover') return;
+      pauseForModal();
+      helpModal.show();
     },
   });
 
@@ -156,16 +186,19 @@ async function bootstrap(): Promise<void> {
     if (hudAccum >= 100) {
       hudAccum = 0;
       hud.update(game.snapshot());
+      // 선택된 세포 패널을 실시간 갱신(재생 중에도). 세포가 죽었으면 닫는다.
+      if (cellModal.visible && cellModal.refresh()) clearSelection();
     }
   });
 
   // ── 입력 ──
   window.addEventListener('keydown', (e) => {
-    if (infoModal.visible || envModal.visible || cellModal.visible) {
+    if (infoModal.visible || envModal.visible || helpModal.visible || cellModal.visible) {
       if (e.key === 'Escape' || e.key === ' ') {
         e.preventDefault();
         infoModal.hide();
         envModal.hide();
+        helpModal.hide();
         cellModal.hide();
       }
       return;
@@ -211,6 +244,11 @@ async function bootstrap(): Promise<void> {
 
   // 초기 HUD 1회 갱신
   hud.update(game.snapshot());
+
+  // ── 시작 화면 표시: 바로 시작하지 않고 대기. 그동안 시뮬레이션 정지 ──
+  if (game.phase === 'running') game.togglePause();
+  hud.setPaused(true);
+  startScreen.show();
 
   // 개발 콘솔 디버그 핸들 (밸런스 튜닝/검증용)
   if (import.meta.env.DEV) {

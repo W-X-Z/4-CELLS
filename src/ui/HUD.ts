@@ -60,6 +60,7 @@ export class HUD {
       onPause: () => void;
       onSpeciesClick: (id: SpeciesId) => void;
       onEnvClick: (key: EnvKey) => void;
+      onHelp: () => void;
     },
   ) {
     this.build();
@@ -76,11 +77,13 @@ export class HUD {
         <button class="btn" data-speed="2">2×</button>
         <button class="btn" data-speed="4">4×</button>
         <button class="btn btn-pause" id="btn-pause">⏸</button>
+        <button class="btn" id="btn-help" aria-label="도움말">❓</button>
       </div>`;
     this.top.appendChild(bar);
     this.timeEl = bar.querySelector('#s-time')!;
     this.pauseBtn = bar.querySelector('#btn-pause')!;
     this.pauseBtn.onclick = () => this.handlers.onPause();
+    bar.querySelector<HTMLButtonElement>('#btn-help')!.onclick = () => this.handlers.onHelp();
     bar.querySelectorAll<HTMLButtonElement>('[data-speed]').forEach((b) => {
       this.speedBtns.push(b);
       b.onclick = () => {
