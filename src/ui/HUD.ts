@@ -77,7 +77,7 @@ export class HUD {
         <button class="btn" data-speed="2">2×</button>
         <button class="btn" data-speed="4">4×</button>
         <button class="btn btn-pause" id="btn-pause">⏸</button>
-        <button class="btn" id="btn-help" aria-label="도움말">❓</button>
+        <button class="btn btn-help" id="btn-help" aria-label="도움말">❓</button>
       </div>`;
     this.top.appendChild(bar);
     this.timeEl = bar.querySelector('#s-time')!;

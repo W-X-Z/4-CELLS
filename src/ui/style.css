@@ -61,6 +61,13 @@ html, body {
 }
 .btn:hover { border-color: var(--accent); }
 .btn.active { background: var(--accent); color: #04121f; border-color: var(--accent); }
+/* 도움말 버튼 강조: 눈에 띄도록 액센트 테두리 + 은은한 글로우 */
+.btn-help { border-color: var(--accent); color: var(--accent); font-weight: 700; box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.5); animation: help-pulse 2.4s ease-in-out infinite; }
+.btn-help:hover { background: var(--accent); color: #04121f; }
+@keyframes help-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); }
+  50% { box-shadow: 0 0 8px 1px rgba(56, 189, 248, 0.55); }
+}
 
 /* ── 상단 바: 시간 + 배속 ── */
 .hud-top {
@@ -213,8 +220,9 @@ html, body {
 .start-screen.hidden { display: none; }
 .start-card { text-align: center; max-width: 420px; }
 .start-logo { font-size: 60px; line-height: 1; }
-.start-title { font-size: 38px; font-weight: 800; letter-spacing: 5px; margin: 8px 0 4px; }
-.start-sub { color: var(--muted); font-size: 15px; line-height: 1.6; margin-bottom: 26px; }
+.start-title { font-size: 40px; font-weight: 800; letter-spacing: 6px; margin: 8px 0 8px; }
+.start-tag { color: var(--accent); font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+.start-sub { color: var(--muted); font-size: 14px; line-height: 1.7; margin-bottom: 26px; }
 .start-actions { display: flex; flex-direction: column; gap: 12px; align-items: center; }
 .start-primary { background: var(--accent); color: #04121f; border: none; font-size: 18px; font-weight: 700; padding: 14px 40px; min-width: 220px; }
 .start-secondary { font-size: 16px; padding: 12px 40px; min-width: 220px; }
@@ -238,8 +246,8 @@ html, body {
 .cell-panel { position: absolute; inset: 0; pointer-events: none; }
 .cell-panel.hidden { display: none; }
 .cell-panel .modal-card {
-  position: absolute; left: 12px; bottom: 84px;
-  width: 300px; max-width: calc(100% - 24px); max-height: 52vh;
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: 320px; max-width: calc(100% - 32px); max-height: 74vh;
   overflow-y: auto; pointer-events: auto;
 }
 
@@ -268,6 +276,6 @@ html, body {
   .choice-grid { gap: 10px; }
   /* 선택 완료 토스트가 하단 세포 바(모바일 2×2 → 높음)와 겹치지 않도록 위로 올린다 */
   .feedback-layer { bottom: calc(122px + env(safe-area-inset-bottom)); right: 10px; }
-  .cell-panel .modal-card { left: 8px; right: 8px; width: auto; bottom: 96px; max-height: 42vh; }
+  .cell-panel .modal-card { left: 12px; right: 12px; width: auto; top: 50%; bottom: auto; transform: translateY(-50%); max-height: 78vh; }
   .start-title { font-size: 32px; }
 }

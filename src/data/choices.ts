@@ -17,7 +17,7 @@ const rawChoices: ChoiceDef[] = [
   {
     id: 'photo_chloroplast',
     title: '엽록체 강화',
-    description: '같은 CO₂로 더 많은 에너지를 얻어 빠르게 번식하는 광합성 개체.',
+    description: '적은 CO₂로 더 많은 에너지 → 번식 빨라짐.',
     category: 'photosynth',
     effects: [{ kind: 'mutation', species: 'photosynth', field: 'energyFromIntake', value: 1.4, rate: 0.5 }],
     baseWeight: 8,
@@ -26,7 +26,7 @@ const rawChoices: ChoiceDef[] = [
   {
     id: 'photo_thrifty',
     title: '저에너지 대사',
-    description: '기초 에너지 소모가 적어 CO₂가 부족한 시기에도 오래 버티는 광합성 개체.',
+    description: '기초대사↓ — CO₂가 마를 때 오래 버팀.',
     category: 'photosynth',
     effects: [{ kind: 'mutation', species: 'photosynth', field: 'upkeep', value: 0.72, rate: 0.5 }],
     baseWeight: 7,
@@ -35,7 +35,7 @@ const rawChoices: ChoiceDef[] = [
   {
     id: 'photo_immune',
     title: '내독성 세포막',
-    description: '독성에 잘 견뎌 오염된 환경에서도 병에 잘 걸리지 않는 광합성 개체.',
+    description: '독성 내성↑ — 오염 속에서도 잘 안 병듦.',
     category: 'photosynth',
     effects: [{ kind: 'mutation', species: 'photosynth', field: 'toxicityTolerance', value: 1.8, rate: 0.5 }],
     baseWeight: 6,
@@ -44,7 +44,7 @@ const rawChoices: ChoiceDef[] = [
   {
     id: 'photo_breeder',
     title: '왕성한 번식',
-    description: '더 적은 에너지로도 분열해 개체수를 빠르게 불리는 광합성 개체.',
+    description: '분열 문턱↓ — 개체수를 빨리 불림.',
     category: 'photosynth',
     effects: [{ kind: 'mutation', species: 'photosynth', field: 'divideEnergy', value: 0.75, rate: 0.5 }],
     baseWeight: 6,
@@ -53,7 +53,7 @@ const rawChoices: ChoiceDef[] = [
   {
     id: 'photo_frugal_split',
     title: '절약 분열',
-    description: '분열에 드는 에너지 소각이 적어 손실 없이 자주 나뉘는 광합성 개체.',
+    description: '분열 비용↓ — 손실 없이 자주 분열.',
     category: 'photosynth',
     effects: [{ kind: 'mutation', species: 'photosynth', field: 'divideCost', value: 0.55, rate: 0.5 }],
     baseWeight: 5,
@@ -61,7 +61,7 @@ const rawChoices: ChoiceDef[] = [
   {
     id: 'photo_giant',
     title: '거대 엽록체 (트레이드오프)',
-    description: '최대 에너지가 크게 늘지만 몸집이 커진 만큼 기초대사도 늘어난다.',
+    description: '최대 에너지↑ ↔ 기초대사↑',
     category: 'photosynth',
     effects: [
       { kind: 'mutation', species: 'photosynth', field: 'maxEnergy', value: 1.5, rate: 0.45 },
@@ -72,7 +72,7 @@ const rawChoices: ChoiceDef[] = [
   {
     id: 'photo_deep',
     title: '심층 광합성 (트레이드오프)',
-    description: '광합성 효율이 크게 오르는 대신 그만큼 기초대사 부담도 커진다.',
+    description: '광합성 효율↑↑ ↔ 기초대사↑',
     category: 'photosynth',
     effects: [
       { kind: 'mutation', species: 'photosynth', field: 'energyFromIntake', value: 1.6, rate: 0.45 },
@@ -83,7 +83,7 @@ const rawChoices: ChoiceDef[] = [
   {
     id: 'photo_extremophile',
     title: '극한 내성 (트레이드오프)',
-    description: '독성 내성이 매우 강해지지만 에너지 효율이 약간 떨어지는 광합성 개체.',
+    description: '독성 내성↑↑ ↔ 광합성 효율 약간↓',
     category: 'photosynth',
     effects: [
       { kind: 'mutation', species: 'photosynth', field: 'toxicityTolerance', value: 2.0, rate: 0.45 },
@@ -95,7 +95,7 @@ const rawChoices: ChoiceDef[] = [
   {
     id: 'photo_colony',
     title: '밀집 군체 (위험)',
-    description: '분열 비용이 절반으로 줄어 폭발적으로 늘지만, 개체가 약해져 쉽게 죽는다.',
+    description: '분열 비용↓↓ ↔ 최대 에너지↓ (폭증하나 약함)',
     category: 'photosynth',
     effects: [
       { kind: 'mutation', species: 'photosynth', field: 'divideCost', value: 0.5, rate: 0.4 },
@@ -109,7 +109,7 @@ const rawChoices: ChoiceDef[] = [
   {
     id: 'consumer_jaws',
     title: '예리한 이빨',
-    description: '광합성 세포를 뜯을 때 더 많은 에너지를 얻는 소비 개체.',
+    description: '포식 1회 에너지↑.',
     category: 'consumer',
     effects: [{ kind: 'mutation', species: 'consumer', field: 'attackEnergy', value: 1.45, rate: 0.5 }],
     baseWeight: 7,
@@ -118,7 +118,7 @@ const rawChoices: ChoiceDef[] = [
   {
     id: 'consumer_hardy',
     title: '강인한 세포질',
-    description: '최대 에너지가 크고 기초대사가 낮아 굶주림·포식을 잘 버티는 소비 개체.',
+    description: '최대 에너지↑·기초대사↓ — 굶주림에 강함.',
     category: 'consumer',
     effects: [
       { kind: 'mutation', species: 'consumer', field: 'maxEnergy', value: 1.3, rate: 0.5 },
@@ -130,7 +130,7 @@ const rawChoices: ChoiceDef[] = [
   {
     id: 'consumer_breeder',
     title: '왕성한 번식',
-    description: '더 적은 에너지로도 분열해 개체수를 빠르게 회복하는 소비 개체.',
+    description: '분열 문턱↓ — 개체수 빠른 회복.',
     category: 'consumer',
     effects: [{ kind: 'mutation', species: 'consumer', field: 'divideEnergy', value: 0.75, rate: 0.5 }],
     baseWeight: 6,
@@ -139,7 +139,7 @@ const rawChoices: ChoiceDef[] = [
   {
     id: 'consumer_eyes',
     title: '매의 시야',
-    description: '시야가 넓어 드물게 흩어진 광합성 세포도 찾아내는 소비 개체.',
+    description: '시야↑ — 흩어진 먹이도 탐지.',
     category: 'consumer',
     effects: [{ kind: 'mutation', species: 'consumer', field: 'vision', value: 1.5, rate: 0.45 }],
     baseWeight: 5,
@@ -148,7 +148,7 @@ const rawChoices: ChoiceDef[] = [
   {
     id: 'consumer_immune',
     title: '면역 세포막',
-    description: '독성 내성이 높아 오염 속에서도 병에 잘 걸리지 않는 소비 개체.',
+    description: '독성 내성↑ — 오염 속에서도 잘 안 병듦.',
     category: 'consumer',
     effects: [{ kind: 'mutation', species: 'consumer', field: 'toxicityTolerance', value: 1.8, rate: 0.5 }],
     baseWeight: 5,
@@ -157,7 +157,7 @@ const rawChoices: ChoiceDef[] = [
   {
     id: 'consumer_ascetic',
     title: '굼벵이 대사 (트레이드오프)',
-    description: '이동이 느려지는 대신 기초대사가 크게 줄어 오래 버티는 소비 개체.',
+    description: '이동↓ ↔ 기초대사↓↓ (느리나 오래 버팀)',
     category: 'consumer',
     effects: [
       { kind: 'mutation', species: 'consumer', field: 'moveSpeed', value: 0.6, rate: 0.45 },
@@ -168,7 +168,7 @@ const rawChoices: ChoiceDef[] = [
   {
     id: 'consumer_sprinter',
     title: '날렵한 유영 (트레이드오프)',
-    description: '이동이 빨라 먹이를 잘 쫓지만, 그만큼 몸이 약해 최대 에너지가 준다.',
+    description: '이동↑ ↔ 최대 에너지↓ (빠르나 약함)',
     category: 'consumer',
     effects: [
       { kind: 'mutation', species: 'consumer', field: 'moveSpeed', value: 1.4, rate: 0.45 },
@@ -179,7 +179,7 @@ const rawChoices: ChoiceDef[] = [
   {
     id: 'consumer_glutton',
     title: '게걸스러움 (트레이드오프)',
-    description: '소화가 빨라 자주 먹지만, 왕성한 대사로 기초 에너지 소모가 커진다.',
+    description: '소화 빠름 ↔ 기초대사↑ (자주 먹음)',
     category: 'consumer',
     effects: [
       { kind: 'mutation', species: 'consumer', field: 'eatCooldown', value: 0.55, rate: 0.45 },
@@ -190,7 +190,7 @@ const rawChoices: ChoiceDef[] = [
   {
     id: 'consumer_bigbite',
     title: '대식 포식 (트레이드오프)',
-    description: '한 번에 얻는 에너지가 크게 늘지만 소화가 느려져 자주 먹지 못한다.',
+    description: '포식 에너지↑↑ ↔ 소화 느림',
     category: 'consumer',
     effects: [
       { kind: 'mutation', species: 'consumer', field: 'attackEnergy', value: 1.7, rate: 0.4 },
@@ -203,7 +203,7 @@ const rawChoices: ChoiceDef[] = [
   {
     id: 'predator_frenzy',
     title: '광폭화',
-    description: '더 빠르고 사냥 효율이 높은 포식 개체 — 소비 세포가 넘칠 때 강력하다.',
+    description: '이동↑·공격↑ — 먹이가 넘칠 때 강함.',
     category: 'predator',
     effects: [
       { kind: 'mutation', species: 'predator', field: 'moveSpeed', value: 1.35, rate: 0.4 },
@@ -215,7 +215,7 @@ const rawChoices: ChoiceDef[] = [
   {
     id: 'predator_eyes',
     title: '매의 눈',
-    description: '시야가 넓어 드물게 흩어진 소비 세포도 추적하는 포식 개체.',
+    description: '시야↑ — 흩어진 먹이도 추적.',
     category: 'predator',
     effects: [{ kind: 'mutation', species: 'predator', field: 'vision', value: 1.5, rate: 0.45 }],
     baseWeight: 6,
@@ -224,7 +224,7 @@ const rawChoices: ChoiceDef[] = [
   {
     id: 'predator_hardy',
     title: '끈질긴 포식자',
-    description: '최대 에너지가 크고 기초대사가 낮아 먹이가 드문 시기를 버티는 포식 개체.',
+    description: '최대 에너지↑·기초대사↓ — 먹이 가뭄에 강함.',
     category: 'predator',
     effects: [
       { kind: 'mutation', species: 'predator', field: 'maxEnergy', value: 1.3, rate: 0.45 },
@@ -236,7 +236,7 @@ const rawChoices: ChoiceDef[] = [
   {
     id: 'predator_breeder',
     title: '번식 특화',
-    description: '더 적은 에너지로 분열해 사냥에 성공하면 빠르게 불어나는 포식 개체.',
+    description: '분열 문턱↓ — 사냥 성공 시 빠른 증식.',
     category: 'predator',
     effects: [{ kind: 'mutation', species: 'predator', field: 'divideEnergy', value: 0.78, rate: 0.5 }],
     baseWeight: 6,
@@ -245,7 +245,7 @@ const rawChoices: ChoiceDef[] = [
   {
     id: 'predator_frugal_split',
     title: '절약 분열',
-    description: '분열 시 소각 에너지가 적어 새끼를 낳아도 손실이 적은 포식 개체.',
+    description: '분열 비용↓ — 손실 적게 번식.',
     category: 'predator',
     effects: [{ kind: 'mutation', species: 'predator', field: 'divideCost', value: 0.5, rate: 0.5 }],
     baseWeight: 5,
@@ -253,7 +253,7 @@ const rawChoices: ChoiceDef[] = [
   {
     id: 'predator_rapid',
     title: '속성 소화 (트레이드오프)',
-    description: '소화가 빨라 소비 세포를 자주 사냥하지만 기초대사 부담이 커진다.',
+    description: '소화 빠름 ↔ 기초대사↑ (자주 사냥)',
     category: 'predator',
     effects: [
       { kind: 'mutation', species: 'predator', field: 'eatCooldown', value: 0.55, rate: 0.45 },
@@ -265,7 +265,7 @@ const rawChoices: ChoiceDef[] = [
   {
     id: 'predator_ambush',
     title: '은신 사냥 (트레이드오프)',
-    description: '느리게 움직이는 대신 한 번의 사냥으로 훨씬 큰 에너지를 얻는 포식 개체.',
+    description: '이동↓ ↔ 공격↑↑ (한 방이 강함)',
     category: 'predator',
     effects: [
       { kind: 'mutation', species: 'predator', field: 'moveSpeed', value: 0.65, rate: 0.45 },
@@ -276,7 +276,7 @@ const rawChoices: ChoiceDef[] = [
   {
     id: 'predator_immune',
     title: '면역 세포막',
-    description: '독성 내성이 높아 오염 속에서도 병에 잘 걸리지 않는 포식 개체.',
+    description: '독성 내성↑ — 오염 속에서도 잘 안 병듦.',
     category: 'predator',
     effects: [{ kind: 'mutation', species: 'predator', field: 'toxicityTolerance', value: 1.8, rate: 0.5 }],
     baseWeight: 5,
@@ -285,7 +285,7 @@ const rawChoices: ChoiceDef[] = [
   {
     id: 'predator_titan',
     title: '거대 포식자 (위험)',
-    description: '최대 에너지가 크게 늘지만 몸이 무거워져 이동이 느려지는 포식 개체.',
+    description: '최대 에너지↑↑ ↔ 이동↓ (크나 느림)',
     category: 'predator',
     effects: [
       { kind: 'mutation', species: 'predator', field: 'maxEnergy', value: 1.6, rate: 0.4 },
@@ -298,7 +298,7 @@ const rawChoices: ChoiceDef[] = [
   {
     id: 'decomposer_gut',
     title: '강화 소화',
-    description: '시체에서 더 많은 에너지를 얻어 번성하는 분해 개체 — CO₂ 재순환·청소가 빨라진다.',
+    description: '시체 섭취 효율↑ — CO₂ 재순환·청소 가속.',
     category: 'decomposer',
     effects: [{ kind: 'mutation', species: 'decomposer', field: 'energyFromCorpse', value: 1.5, rate: 0.5 }],
     baseWeight: 8,
@@ -307,7 +307,7 @@ const rawChoices: ChoiceDef[] = [
   {
     id: 'decomposer_swift',
     title: '신속 기동',
-    description: '더 빠르고 시야가 넓어 시체를 신속히 찾아 치우는 분해 개체.',
+    description: '이동↑·시야↑ — 시체를 신속히 청소.',
     category: 'decomposer',
     effects: [
       { kind: 'mutation', species: 'decomposer', field: 'moveSpeed', value: 1.4, rate: 0.45 },
@@ -319,7 +319,7 @@ const rawChoices: ChoiceDef[] = [
   {
     id: 'decomposer_thrifty',
     title: '내핍 대사',
-    description: '기초대사가 낮아 시체가 드문 시기에도 살아남는 분해 개체.',
+    description: '기초대사↓ — 시체가 드물 때도 생존.',
     category: 'decomposer',
     effects: [{ kind: 'mutation', species: 'decomposer', field: 'upkeep', value: 0.72, rate: 0.5 }],
     baseWeight: 6,
@@ -328,7 +328,7 @@ const rawChoices: ChoiceDef[] = [
   {
     id: 'decomposer_breeder',
     title: '번식 특화',
-    description: '더 적은 에너지로 분열해 시체가 쌓일 때 빠르게 개체수를 늘리는 분해 개체.',
+    description: '분열 문턱↓ — 시체 쌓일 때 빠른 증식.',
     category: 'decomposer',
     effects: [{ kind: 'mutation', species: 'decomposer', field: 'divideEnergy', value: 0.78, rate: 0.5 }],
     baseWeight: 6,
@@ -337,7 +337,7 @@ const rawChoices: ChoiceDef[] = [
   {
     id: 'decomposer_frugal_split',
     title: '절약 분열',
-    description: '분열 소각 에너지가 적어 손실 없이 자주 나뉘는 분해 개체.',
+    description: '분열 비용↓ — 손실 없이 자주 분열.',
     category: 'decomposer',
     effects: [{ kind: 'mutation', species: 'decomposer', field: 'divideCost', value: 0.55, rate: 0.5 }],
     baseWeight: 5,
@@ -345,7 +345,7 @@ const rawChoices: ChoiceDef[] = [
   {
     id: 'decomposer_maw',
     title: '대식가 (트레이드오프)',
-    description: '시체를 훨씬 빨리 먹어치우지만, 왕성한 대사로 기초 에너지 소모가 커진다.',
+    description: '시체 섭식↑↑ ↔ 기초대사↑',
     category: 'decomposer',
     effects: [
       { kind: 'mutation', species: 'decomposer', field: 'corpseAppetite', value: 1.7, rate: 0.45 },
@@ -357,7 +357,7 @@ const rawChoices: ChoiceDef[] = [
   {
     id: 'decomposer_slowclean',
     title: '굼벵이 청소부 (트레이드오프)',
-    description: '이동이 느려지는 대신 시체 한 덩이에서 훨씬 많은 에너지를 뽑아내는 분해 개체.',
+    description: '이동↓ ↔ 시체 섭취 효율↑',
     category: 'decomposer',
     effects: [
       { kind: 'mutation', species: 'decomposer', field: 'moveSpeed', value: 0.6, rate: 0.45 },
@@ -368,7 +368,7 @@ const rawChoices: ChoiceDef[] = [
   {
     id: 'decomposer_extremophile',
     title: '극한 내성',
-    description: '독성에 매우 강해져 최악의 오염 속에서도 묵묵히 시체를 치우는 분해 개체.',
+    description: '독성 내성↑↑ — 최악의 오염도 견딤.',
     category: 'decomposer',
     effects: [{ kind: 'mutation', species: 'decomposer', field: 'toxicityTolerance', value: 1.6, rate: 0.5 }],
     baseWeight: 5,
@@ -377,7 +377,7 @@ const rawChoices: ChoiceDef[] = [
   {
     id: 'decomposer_gorge',
     title: '폭식 분해 (위험)',
-    description: '시체를 폭발적으로 치우지만, 대신 개체가 약해져 최대 에너지가 크게 준다.',
+    description: '시체 섭식↑↑↑ ↔ 최대 에너지↓',
     category: 'decomposer',
     effects: [
       { kind: 'mutation', species: 'decomposer', field: 'corpseAppetite', value: 2.0, rate: 0.4 },

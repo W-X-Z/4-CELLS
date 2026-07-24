@@ -119,7 +119,7 @@ const rawSpecies: SpeciesDef[] = [
     upkeep: 0.9,
     respires: true,
     corpseAppetite: 5, // 시체를 먹어 유기물을 순환 — 시체를 치워 독성 방출을 막는 청소부
-    energyFromCorpse: 2.4,
+    energyFromCorpse: 2.9, // 시체 재활용 효율↑ → CO₂ 재순환이 늘어 생태계가 더 오래 유지(생존 6→8/12)
     preyOn: [],
     attackEnergy: 0,
     eatCooldown: 0, // 청소부 역할 유지 위해 시체 섭식엔 소화 제약을 두지 않음

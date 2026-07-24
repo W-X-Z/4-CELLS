@@ -16,10 +16,11 @@ export class StartScreen {
       <div class="start-card">
         <div class="start-logo">🧫</div>
         <h1 class="start-title">4 CELLS</h1>
-        <p class="start-sub">세포 생태계 시뮬레이터 — 돌연변이로 개입해 균형을 오래 유지하세요.</p>
+        <p class="start-tag">한 방울 속, 살아 숨쉬는 생태계</p>
+        <p class="start-sub">먹고 · 사냥하고 · 분해하며 스스로 진화합니다.<br>돌연변이를 골라 개입하고, 붕괴를 늦춰보세요.</p>
         <div class="start-actions">
-          <button class="btn start-primary" data-act="start">게임 시작</button>
-          <button class="btn start-secondary" data-act="help">도움말</button>
+          <button class="btn start-primary" data-act="start">▶ 게임 시작</button>
+          <button class="btn start-secondary" data-act="help">❓ 도움말</button>
         </div>
       </div>`;
     this.el.querySelector<HTMLButtonElement>('[data-act="start"]')!.onclick = () => {

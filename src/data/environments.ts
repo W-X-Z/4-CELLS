@@ -69,8 +69,8 @@ export const environmentConfig: EnvironmentConfig = environmentSchema.parse({
   initialCorpses: 0, // 시작 시 시체 없음 — 시체는 세포가 죽어야 생긴다(분해 세포는 초기 사망으로 공급)
 
   // 적은 수로 시작해 키워나간다. 진화는 처음엔 자주, 갈수록 뜸하게(점진적 간격).
-  divisionsPerChoice: 40, // 첫 진화까지 40회 분열
-  divisionsGrowth: 30, // 이후 진화마다 필요한 분열 간격이 +30씩 늘어남
+  divisionsPerChoice: 22, // 적은 개체수에 맞춰 하향 — 첫 진화가 ~20초대에 오도록
+  divisionsGrowth: 18, // 이후 진화마다 필요한 분열 간격이 +18씩(개체수 축소 반영)
 
   // 적은 수로 가운데에서 시작해 키운다.
   initialCounts: {
