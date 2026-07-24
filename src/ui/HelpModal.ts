@@ -90,7 +90,7 @@ export class HelpModal {
           <button class="btn modal-close">✕</button>
         </div>
 
-        <p class="modal-role">세포들이 서로 잡아먹고 분해하며 산소·CO₂를 순환시키는 생태계. 세포가 많이 분열하면 <b>돌연변이 선택지</b>가 열립니다. 개입해서 균형을 최대한 오래 유지하세요.</p>
+        <p class="modal-role">작은 접시 속 생태계. 세포가 먹고 분해하며 산소·CO₂를 순환시켜요. 분열이 쌓이면 <b>돌연변이</b>를 골라 개입할 수 있습니다.</p>
 
         <div class="modal-section">세포 4종</div>
         <div class="help-list">${speciesRows}</div>
