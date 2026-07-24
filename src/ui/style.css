@@ -235,6 +235,21 @@ html, body {
 .help-text b { font-size: 14px; }
 .help-text span { font-size: 12px; color: var(--muted); }
 
+/* ── 도움말 페이지네이션 카드 (클릭·스와이프로 넘김) ── */
+.help-viewport { overflow: hidden; touch-action: pan-y; }
+.help-track { display: flex; transition: transform 0.28s ease; }
+.help-page { flex: 0 0 100%; min-width: 100%; }
+.help-page-title { font-size: 11px; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; margin: 4px 0 12px; }
+.help-lead { font-size: 13.5px; color: var(--muted); line-height: 1.65; margin-bottom: 10px; }
+.help-lead b { color: var(--text); }
+.help-nav { display: flex; align-items: center; justify-content: space-between; margin-top: 18px; }
+.help-arrow { background: var(--panel); border: 1px solid var(--line); color: var(--text); border-radius: 8px; width: 42px; height: 36px; font-size: 20px; line-height: 1; cursor: pointer; }
+.help-arrow:not(:disabled):hover { border-color: var(--accent); color: var(--accent); }
+.help-arrow:disabled { opacity: 0.3; cursor: default; }
+.help-dots { display: flex; gap: 7px; }
+.help-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--line); cursor: pointer; transition: background 0.2s; }
+.help-dot.active { background: var(--accent); }
+
 /* ── 세포 추가 CTA (하단 세포 모달) ── */
 .modal-add {
   background: var(--sp-color, var(--accent)); color: #04121f; border: none;

@@ -34,13 +34,32 @@ const CONTROL_ROWS: { icon: string; name: string; desc: string }[] = [
   { icon: '⏯', name: '배속 / 일시정지', desc: '상단 바 버튼' },
 ];
 
+function rows(items: { icon: string; color?: string; name: string; desc: string }[]): string {
+  return items
+    .map(
+      (r) => `
+      <div class="help-row">
+        <span class="help-icon"${r.color ? ` style="color:${r.color}"` : ''}>${r.icon}</span>
+        <div class="help-text"><b>${r.name}</b><span>${r.desc}</span></div>
+      </div>`,
+    )
+    .join('');
+}
+
 /**
- * 게임 도움말 모달. 시작 화면(또는 상단 ❓)에서 연다.
- * 아이콘 + 짧고 간결한 설명 위주 — 세포/환경/조작을 한눈에.
+ * 게임 도움말 모달 (페이지네이션 카드).
+ * 개요/세포/환경/조작 4페이지를 좌우 화살표·점·스와이프로 넘긴다.
  */
 export class HelpModal {
   private el: HTMLElement;
   visible = false;
+
+  private index = 0;
+  private pageCount = 0;
+  private track!: HTMLElement;
+  private dots!: HTMLElement;
+  private prevBtn!: HTMLButtonElement;
+  private nextBtn!: HTMLButtonElement;
 
   constructor(
     private root: HTMLElement,
@@ -53,58 +72,100 @@ export class HelpModal {
     });
     this.root.appendChild(this.el);
     this.build();
+    // 좌우 방향키로도 넘긴다(도움말이 열려 있을 때만).
+    window.addEventListener('keydown', (e) => {
+      if (!this.visible) return;
+      if (e.key === 'ArrowLeft') { e.preventDefault(); this.go(-1); }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); this.go(1); }
+    });
   }
 
   private build(): void {
-    const speciesRows = speciesDefs
-      .map(
-        (d) => `
-        <div class="help-row">
-          <span class="help-icon" style="color:${hex(d.color)}">${SHAPE_GLYPH[d.shape]}</span>
-          <div class="help-text"><b>${d.name}</b><span>${SPECIES_ONELINE[d.id] ?? ''}</span></div>
-        </div>`,
-      )
+    const pages: { title: string; body: string }[] = [
+      {
+        title: '개요',
+        body: `<p class="help-lead">작은 접시 속 생태계. 세포가 <b>먹고 · 사냥하고 · 분해하며</b> 산소·CO₂를 순환시켜요. 분열이 쌓이면 <b>돌연변이</b>를 골라 개입할 수 있습니다.</p>
+          <p class="help-lead">목표는 간단해요 — 개입해서 <b>균형을 최대한 오래</b> 유지하기.</p>`,
+      },
+      {
+        title: '세포 4종',
+        body: `<div class="help-list">${rows(
+          speciesDefs.map((d) => ({ icon: SHAPE_GLYPH[d.shape], color: hex(d.color), name: d.name, desc: SPECIES_ONELINE[d.id] ?? '' })),
+        )}</div>`,
+      },
+      { title: '환경', body: `<div class="help-list">${rows(ENV_ROWS)}</div>` },
+      { title: '조작', body: `<div class="help-list">${rows(CONTROL_ROWS)}</div>` },
+    ];
+    this.pageCount = pages.length;
+
+    const pagesHtml = pages
+      .map((p) => `<div class="help-page"><div class="help-page-title">${p.title}</div>${p.body}</div>`)
       .join('');
-
-    const envRows = ENV_ROWS.map(
-      (r) => `
-        <div class="help-row">
-          <span class="help-icon" style="color:${r.color}">${r.icon}</span>
-          <div class="help-text"><b>${r.name}</b><span>${r.desc}</span></div>
-        </div>`,
-    ).join('');
-
-    const controlRows = CONTROL_ROWS.map(
-      (r) => `
-        <div class="help-row">
-          <span class="help-icon">${r.icon}</span>
-          <div class="help-text"><b>${r.name}</b><span>${r.desc}</span></div>
-        </div>`,
-    ).join('');
+    const dotsHtml = pages.map((_, i) => `<span class="help-dot${i === 0 ? ' active' : ''}"></span>`).join('');
 
     this.el.innerHTML = `
-      <div class="modal-card">
+      <div class="modal-card help-card">
         <div class="modal-head">
           <span class="modal-glyph">🧫</span>
           <div class="modal-title">게임 방법</div>
           <button class="btn modal-close">✕</button>
         </div>
-
-        <p class="modal-role">작은 접시 속 생태계. 세포가 먹고 분해하며 산소·CO₂를 순환시켜요. 분열이 쌓이면 <b>돌연변이</b>를 골라 개입할 수 있습니다.</p>
-
-        <div class="modal-section">세포 4종</div>
-        <div class="help-list">${speciesRows}</div>
-
-        <div class="modal-section">환경</div>
-        <div class="help-list">${envRows}</div>
-
-        <div class="modal-section">조작</div>
-        <div class="help-list">${controlRows}</div>
+        <div class="help-viewport">
+          <div class="help-track">${pagesHtml}</div>
+        </div>
+        <div class="help-nav">
+          <button class="help-arrow" data-dir="-1" aria-label="이전">‹</button>
+          <div class="help-dots">${dotsHtml}</div>
+          <button class="help-arrow" data-dir="1" aria-label="다음">›</button>
+        </div>
       </div>`;
+
     this.el.querySelector<HTMLButtonElement>('.modal-close')!.onclick = () => this.hide();
+    this.track = this.el.querySelector('.help-track')!;
+    this.dots = this.el.querySelector('.help-dots')!;
+    this.prevBtn = this.el.querySelector('[data-dir="-1"]')!;
+    this.nextBtn = this.el.querySelector('[data-dir="1"]')!;
+    this.prevBtn.onclick = () => this.go(-1);
+    this.nextBtn.onclick = () => this.go(1);
+    this.el.querySelectorAll<HTMLElement>('.help-dot').forEach((dot, i) => (dot.onclick = () => this.goTo(i)));
+    this.setupSwipe();
+    this.goTo(0);
+  }
+
+  /** 스와이프(수평 드래그)로 페이지 넘기기 */
+  private setupSwipe(): void {
+    const vp = this.el.querySelector<HTMLElement>('.help-viewport')!;
+    let startX = 0;
+    let active = false;
+    vp.addEventListener('pointerdown', (e) => {
+      active = true;
+      startX = e.clientX;
+    });
+    const end = (e: PointerEvent): void => {
+      if (!active) return;
+      active = false;
+      const dx = e.clientX - startX;
+      if (dx < -40) this.go(1);
+      else if (dx > 40) this.go(-1);
+    };
+    vp.addEventListener('pointerup', end);
+    vp.addEventListener('pointercancel', () => (active = false));
+  }
+
+  private go(dir: number): void {
+    this.goTo(this.index + dir);
+  }
+
+  private goTo(i: number): void {
+    this.index = Math.max(0, Math.min(this.pageCount - 1, i));
+    this.track.style.transform = `translateX(${-this.index * 100}%)`;
+    this.dots.querySelectorAll('.help-dot').forEach((d, k) => d.classList.toggle('active', k === this.index));
+    this.prevBtn.disabled = this.index === 0;
+    this.nextBtn.disabled = this.index === this.pageCount - 1;
   }
 
   show(): void {
+    this.goTo(0); // 열 때 항상 첫 페이지부터
     this.el.classList.remove('hidden');
     this.visible = true;
   }
